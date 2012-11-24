@@ -1,10 +1,3 @@
-/*
- * main.cpp
- *
- *  Created on: Sep 8, 2012
- *      Author: Guillaume Chatelet
- */
-
 #include <sequence/Parser.hpp>
 
 namespace sequence {

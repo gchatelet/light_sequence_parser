@@ -13,7 +13,7 @@ lss: app/lss.cpp libsequenceparser.a
 tests: all_tests
 	./$^ --gtest_filter=-Performance*
 
-all_tests: test/tests.cpp libsequenceparser.a
+all_tests: test/tests.cpp
 	$(CC) $(CFLAGS) $^ -o $@ -lgtest_main
 
 libsequenceparser.a: FolderParser.o

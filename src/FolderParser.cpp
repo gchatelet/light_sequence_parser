@@ -1,9 +1,3 @@
-/*
- * FolderParser.cpp
- *
- *  Created on: Nov 24, 2012
- *      Author: Guillaume Chatelet
- */
 #include <sequence/Parser.hpp>
 
 #ifdef GTEST

@@ -1,10 +1,3 @@
-/*
- * item.hpp
- *
- *  Created on: Sep 12, 2012
- *      Author: Guillaume Chatelet
- */
-
 #ifndef ITEM_HPP_
 #define ITEM_HPP_
 
@@ -20,6 +13,14 @@ typedef std::vector<index_type> VALUES;
 typedef std::string STRING;
 typedef typename STRING::value_type CHAR;
 
+/**
+ * An Item represents a sequence entry.
+ * It can be of the following types :
+ * - INVALID : the item is not in a valid state
+ * - SINGLE  : it's either a single file or directory
+ * - INDICED : it's a sequence with a set of numbers attached to it
+ * - PACKED  : it's a contiguous sequence going from start to end
+ */
 struct Item {
     enum
         : CHAR {PADDING_CHAR = '#'
@@ -57,12 +58,10 @@ struct Item {
     }
 };
 
+/**
+ * For convenience, Items is defined to be a vector of Item
+ */
 typedef std::vector<Item> Items;
-
-struct FolderContent {
-    STRING name;
-    Items directories, files;
-};
 
 }
 

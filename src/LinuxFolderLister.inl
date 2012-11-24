@@ -1,10 +1,3 @@
-/*
- * LinuxFolderLister.inl
- *
- *  Created on: Nov 24, 2012
- *      Author: Guillaume Chatelet
- */
-
 #ifndef LINUXFOLDERLISTER_INL_
 #define LINUXFOLDERLISTER_INL_
 
