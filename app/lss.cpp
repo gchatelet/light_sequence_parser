@@ -1,4 +1,6 @@
 #include <sequence/Parser.hpp>
+#include <cstdio>
+#include <cstdlib>
 
 namespace sequence {
 
@@ -12,7 +14,7 @@ inline static void print(const Item& item) {
 		printf("Invalid\n");
 		break;
 	case Item::INDICED:
-		printf("%s (%ld) %d\n", pFilename, item.indices.size(), item.padding);
+		printf("%s (%ul) %d\n", pFilename, item.indices.size(), item.padding);
 		break;
 	case Item::PACKED:
 		if (item.step == 1)

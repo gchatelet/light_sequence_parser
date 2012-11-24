@@ -570,9 +570,9 @@ FolderContent parse(const Configuration &config, const GetNextEntryFunction &get
 }
 
 #ifdef _WIN64
-#error "Can't be compiled on Windows 64 yet"
+#include "Win32FolderLister.inl"
 #elif _WIN32
-#error "Can't be compiled on Windows 32 yet"
+#include "Win32FolderLister.inl"
 #elif __APPLE__
 #error "Can't be compiled on Apple yet"
 #elif __linux
