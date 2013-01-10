@@ -543,7 +543,7 @@ FolderContent parse(const Configuration &config, const GetNextEntryFunction &get
 	const SplitIndexFunction splitFunction = getSplitter(config.getPivotIndex);
 	for (auto &item : trie.reduceToIndicedItems(splitFunction))
 		files.emplace_back(std::move(item));
-	if (config.mergePadding) {
+	if (config.mergePadding && files.size()>=2) {
 		sort(files.begin(), files.end(), less);
 		auto currentItem = files.begin();
 		for (auto nextItem = currentItem + 1; nextItem != files.end(); ++nextItem)
