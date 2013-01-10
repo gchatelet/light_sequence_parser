@@ -4,7 +4,7 @@
 
 namespace sequence {
 
-inline static void print(const Item& item) {
+inline static void printRegular(const Item& item) {
 	const auto pFilename = item.filename.c_str();
 	switch (item.getType()) {
 	case Item::SINGLE:
@@ -14,7 +14,7 @@ inline static void print(const Item& item) {
 		printf("Invalid\n");
 		break;
 	case Item::INDICED:
-		printf("%s (%lu) %d\n", pFilename, (unsigned long)item.indices.size(), item.padding);
+		printf("%s (%lu) %d\n", pFilename, (unsigned long) item.indices.size(), item.padding);
 		break;
 	case Item::PACKED:
 		if (item.step == 1)
@@ -23,6 +23,48 @@ inline static void print(const Item& item) {
 			printf("%s [%d:%d]/%d #%d\n", pFilename, item.start, item.end, item.step, item.padding);
 		break;
 	}
+}
+
+inline static void printRegular(const FolderContent&result) {
+	printf("\n\n* %s\n", result.name.c_str());
+	for (const Item &item : result.directories)
+		printRegular(item);
+	printf("\n");
+	for (const Item &item : result.files)
+		printRegular(item);
+}
+
+inline static void printJson(const Item& item) {
+	const auto pFilename = item.filename.c_str();
+	switch (item.getType()) {
+	case Item::SINGLE:
+		printf("%s\n", pFilename);
+		break;
+	case Item::INVALID:
+		printf("Invalid\n");
+		break;
+	case Item::INDICED:
+		printf("%s (%lu) %d\n", pFilename, (unsigned long) item.indices.size(), item.padding);
+		break;
+	case Item::PACKED:
+		if (item.step == 1)
+			printf("%s [%d:%d] #%d\n", pFilename, item.start, item.end, item.padding);
+		else
+			printf("%s [%d:%d]/%d #%d\n", pFilename, item.start, item.end, item.step, item.padding);
+		break;
+	}
+}
+
+inline static void printJson(const FolderContent&result) {
+	printf("{");
+	printf(R"("path":"%s",[)", result.name.c_str());
+	for (const Item &item : result.directories)
+		printJson(item);
+	printf("],[");
+	for (const Item &item : result.files)
+		printJson(item);
+	printf("]");
+	printf("}");
 }
 
 } // namespace sequence
@@ -35,6 +77,7 @@ static void printHelp() {
 	printf("--pack,-p            Drop indices and replace with one or several contiguous chunks\n");
 	printf("--bake-singleton,-b  Replace Items with only one index by it's corresponding filename\n");
 	printf("--sort,-s            Print folder and files lexicographically sorted\n");
+//	printf("--json,-j            Output result as a json object\n");
 	printf("--keep=              Strategy to handle ambiguous locations\n");
 	printf("       none          flattens the set\n");
 	printf("       first         keep first number\n");
@@ -50,6 +93,7 @@ int main(int argc, char **argv) {
 	using namespace sequence;
 
 	bool recursive = false;
+	bool json = false;
 	Configuration configuration;
 	configuration.getPivotIndex = RETAIN_HIGHEST_VARIANCE;
 
@@ -69,6 +113,8 @@ int main(int argc, char **argv) {
 			configuration.bakeSingleton = true;
 		else if (arg == "--sort" || arg == "-s")
 			configuration.sort = true;
+//		else if (arg == "--json" || arg == "-j")
+//			json = true;
 		else if (arg == "--keep=none")
 			configuration.getPivotIndex = RETAIN_NONE;
 		else if (arg == "--keep=first")
@@ -92,9 +138,7 @@ int main(int argc, char **argv) {
 
 		auto result = parseDir(configuration, current.c_str());
 
-		printf("\n\n* %s\n", result.name.c_str());
 		for (const Item &item : result.directories) {
-			print(item);
 			const string& filename = item.filename;
 			if (recursive && !filename.empty() && filename != "." && filename != "..") {
 				const bool lastCurrentCharIsSlash = current.back() == '/';
@@ -104,9 +148,10 @@ int main(int argc, char **argv) {
 					folders.emplace_back(current + '/' + filename);
 			}
 		}
-		printf("\n");
-		for (const Item &item : result.files)
-			print(item);
+		if (json)
+			printJson(result);
+		else
+			printRegular(result);
 
 		folders.pop_front();
 	}
