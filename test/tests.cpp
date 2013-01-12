@@ -455,6 +455,18 @@ TEST(Performance, 200_000_files_with_step_of_3) {
     checkRegular(file, 0, 199998, 0, 3);
 }
 
+TEST(Correctness, bakeSingleton) {
+    const char * pFilename = "xmode2";
+    FileProvider provider(pFilename);
+    Configuration conf;
+    conf.bakeSingleton = true;
+    conf.pack = true;
+    auto result = parse(conf, provider);
+    EXPECT_EQ(1, result.files.size());
+    const auto & file = result.files[0];
+    EXPECT_EQ(Item::SINGLE, file.getType());
+}
+
 } // namespace details
 
 } // namespace sequence

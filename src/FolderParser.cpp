@@ -412,13 +412,29 @@ static bool merge(Item &a, Item &b) {
 }
 
 static void bakeSingleton(Item &item) {
-	auto &indices = item.indices;
-	if ( indices.size() != 1 )
+	size_t indexToBake;
+	switch (item.getType()) {
+	case Item::INDICED: {
+		auto &indices = item.indices;
+		if (indices.size() != 1)
+			return;
+		indexToBake = indices[0];
+		indices.clear();
+		break;
+	}
+	case Item::PACKED: {
+		if(item.start!=item.end)
+			return;
+		indexToBake = item.start;
+		item.step = -1;
+		break;
+	}
+	default:
 		return;
+	}
 	const auto locations = getLocations(1, item.filename);
 	assert(locations.size()==1);
-	bake(locations[0], item.filename, indices[0]);
-	indices.clear();
+	bake(locations[0], item.filename, indexToBake);
 }
 
 static inline bool less(const Item &a, const Item &b) {
@@ -543,7 +559,7 @@ FolderContent parse(const Configuration &config, const GetNextEntryFunction &get
 	const SplitIndexFunction splitFunction = getSplitter(config.getPivotIndex);
 	for (auto &item : trie.reduceToIndicedItems(splitFunction))
 		files.emplace_back(std::move(item));
-	if (config.mergePadding && files.size()>=2) {
+	if (config.mergePadding && files.size() >= 2) {
 		sort(files.begin(), files.end(), less);
 		auto currentItem = files.begin();
 		for (auto nextItem = currentItem + 1; nextItem != files.end(); ++nextItem)
