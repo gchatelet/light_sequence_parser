@@ -413,7 +413,7 @@ static bool merge(Item &a, Item &b) {
 
 static void bakeSingleton(Item &item) {
 	auto &indices = item.indices;
-	if (indices.size() != 1)
+	if ( indices.size() != 1 )
 		return;
 	const auto locations = getLocations(1, item.filename);
 	assert(locations.size()==1);
