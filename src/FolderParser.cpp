@@ -590,7 +590,7 @@ FolderContent parse(const Configuration &config, const GetNextEntryFunction &get
 #elif _WIN32
 #include "Win32FolderLister.inl"
 #elif __APPLE__
-#error "Can't be compiled on Apple yet"
+#include "LinuxFolderLister.inl"
 #elif __linux
 #include "LinuxFolderLister.inl"
 #elif __unix // all unices not caught above
