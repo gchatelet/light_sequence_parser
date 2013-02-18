@@ -13,6 +13,7 @@
 #include <set>
 #include <queue>
 #include <cassert>
+#include <numeric>
 
 namespace sequence {
 
