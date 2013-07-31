@@ -156,7 +156,8 @@ public:
 	}
 
 private:
-	FRIEND_TEST(PatternSet, notReadyAfterBaking)
+	FRIEND_TEST(PatternSet, notReadyAfterBaking);
+
 	std::vector<std::unique_ptr<PatternSet> > split(size_t locationIndex) {
 		assert(valueArrays.size()>1);
 		assert(locationIndex<valueArrays.size());
@@ -187,9 +188,9 @@ private:
 		return result;
 	}
 
-	FRIEND_TEST(Items, fromUnitFilePatternSet)
-	FRIEND_TEST(Items, fromRegularPatternSet)
-	FRIEND_TEST(Items, fromDegeneratedPatternSet)
+	FRIEND_TEST(Items, fromUnitFilePatternSet);
+	FRIEND_TEST(Items, fromRegularPatternSet);
+	FRIEND_TEST(Items, fromDegeneratedPatternSet);
 
 	void addItems(Items &items) {
 		if (isReady()) {

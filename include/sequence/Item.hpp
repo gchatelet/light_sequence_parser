@@ -22,9 +22,9 @@ typedef typename STRING::value_type CHAR;
  * - PACKED  : it's a contiguous sequence going from start to end
  */
 struct Item {
-    enum
-        : CHAR {PADDING_CHAR = '#'
-    };
+	enum
+		: CHAR {PADDING_CHAR = '#'
+	};
     enum Type {
         INVALID, SINGLE, INDICED, PACKED
     };
@@ -35,13 +35,13 @@ struct Item {
     Item() :
                     start(-1), end(-1), padding(-1), step(-1) {
     }
-    Item(const STRING &filename) :
+    Item(const STRING& filename) :
                     filename(filename), start(-1), end(-1), padding(-1), step(-1) {
     }
-    Item(STRING &&filename) :filename(std::move(filename)),
+    Item(STRING&& filename) :filename(std::move(filename)),
     start(-1), end(-1), padding(-1), step(-1) {
     }
-    Item(STRING &&filename, VALUES&& values) : filename(std::move(filename)), indices(std::move(values)),
+    Item(STRING&& filename, VALUES&& values) : filename(std::move(filename)), indices(std::move(values)),
     start(-1), end(-1), padding(-1), step(-1) {
     }
     Type getType() const {

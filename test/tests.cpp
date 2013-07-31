@@ -1,5 +1,6 @@
 #define GTEST
 #include "../src/FolderParser.cpp"
+#include "../src/Tools.cpp"
 
 using namespace std;
 
@@ -7,7 +8,9 @@ using namespace std;
 
 namespace sequence {
 
-namespace details {
+/**
+ * Items tests
+ */
 
 TEST(Items, type) {
     Item item;
@@ -21,6 +24,89 @@ TEST(Items, type) {
     item.step = 0;
     EXPECT_EQ(Item::PACKED, item.getType());
 }
+
+/**
+ * Tools tests
+ */
+
+void checkInvalid(const Item& item) {
+    EXPECT_EQ(item.getType(), Item::INVALID);
+}
+
+TEST(Tools, createFile) {
+    // a file that looks like a pattern is invalid
+    checkInvalid(createSingleFile("file#.jpg"));
+    checkInvalid(createSingleFile("file@.jpg"));
+
+    const Item item = createSingleFile("file.jpg");
+    EXPECT_EQ(item.getType(), Item::SINGLE);
+    EXPECT_EQ(item.filename, "file.jpg");
+}
+
+TEST(Tools, createSequence) {
+    // valid sequences
+    {
+        // empty prefix, suffix is ok
+        const Item item = createSequence("", "", 0, 0);
+        EXPECT_EQ(item.getType(), Item::PACKED);
+        EXPECT_EQ(item.filename, "#");
+        EXPECT_EQ(item.padding, 1);
+        EXPECT_EQ(item.start, 0);
+        EXPECT_EQ(item.end, 0);
+    }
+    {
+        // normal creation
+        const Item item = createSequence("file-", ".png", 10, 20, 3);
+        EXPECT_EQ(item.getType(), Item::PACKED);
+        EXPECT_EQ(item.filename, "file-###.png");
+        EXPECT_EQ(item.padding, 3);
+        EXPECT_EQ(item.start, 10);
+        EXPECT_EQ(item.end, 20);
+    }
+    // invalid if end < start
+    checkInvalid(createSequence("", "", 10, 0));
+    // invalid if prefix or suffix contains a # or @
+    checkInvalid(createSequence("#", "", 0, 0));
+    checkInvalid(createSequence("", "@", 0, 0));
+    // invalid if step is 0
+    checkInvalid(createSequence("", "", 0, 0, 0, 0));
+}
+
+TEST(Tools, matcherItem) {
+    EXPECT_EQ(getMatcherString("@"), "#+");
+    EXPECT_EQ(getMatcherString("file###.jpg"), "file###\\.jpg");
+    EXPECT_EQ(getMatcherString("*#.jpg"), ".*#+\\.jpg");
+    EXPECT_THROW(getMatcherString(""), std::invalid_argument);
+    EXPECT_THROW(getMatcherString("missing_padding_character"), std::invalid_argument);
+}
+
+void match(const string& pattern, const std::string& prefix, const std::string& suffix, char padding = 1) {
+    const auto candidate = createSequence(prefix, suffix, 0, 0, padding);
+    EXPECT_TRUE(match(getMatcher(pattern), candidate)) << "matching '" << candidate.filename << "' with '" << getMatcherString(pattern) << "'";
+}
+
+TEST(Tools, match) {
+    match("file-#.png", "file-", ".png");
+    match("file-@.png", "file-", ".png", 3);
+    match("file-#*", "file-", ".tif");
+    match("*-#-*", "file-", "-.cr2");
+}
+
+TEST(Tools, filter) {
+    Items items = { createSequence("file-", ".png", 1, 2), createSequence("file-", ".jpg", 1, 2) };
+    const std::regex matcher = getMatcher("file-@.png");
+    auto predicate = [&](const Item& item) -> bool {
+        return !match(matcher, item);
+    };
+    items.erase(std::remove_if(items.begin(), items.end(), predicate), items.end());
+    EXPECT_EQ(items.size(), 1);
+}
+
+/**
+ * FolderParser tests
+ */
+
+namespace details {
 
 TEST(Items, fromUnitFilePatternSet) {
     PatternSet set(0, "file.ext");
@@ -39,7 +125,7 @@ TEST(Items, fromRegularPatternSet) {
     set.addItems(items);
     auto &item = items.back();
     ASSERT_EQ(Item::INDICED, item.getType());
-    ASSERT_EQ(VALUES( { 10,11}), item.indices);
+    ASSERT_EQ(VALUES( { 10, 11 }), item.indices);
 }
 
 TEST(Items, fromDegeneratedPatternSet) {
@@ -205,7 +291,7 @@ TEST(Trie, problematicReduce_Split) {
     auto items = trie.reduceToIndicedItems([](const PatternSet&) {return 0;});
     ASSERT_EQ(2, items.size());
     EXPECT_EQ("file001.##.ext", items[0].filename);
-    EXPECT_EQ( VALUES( { 1,2}), items[0].indices);
+    EXPECT_EQ(VALUES( { 1, 2 }), items[0].indices);
     EXPECT_EQ(Item::INDICED, items[0].getType());
     EXPECT_EQ("file002.03.ext", items[1].filename);
     EXPECT_EQ(Item::SINGLE, items[1].getType());
@@ -263,15 +349,15 @@ TEST(PatternSet, notReadyAfterBaking) {
 TEST(Locations, single) {
     auto locations = getLocations(1, "#");
     ASSERT_EQ(1, locations.size());
-    EXPECT_EQ(Location(0,1), locations[0]);
+    EXPECT_EQ(Location(0, 1), locations[0]);
 }
 
 TEST(Locations, multiple) {
     auto locations = getLocations(3, "file.#.#.cr#");
     ASSERT_EQ(3, locations.size());
-    EXPECT_EQ(Location(5,6), locations[0]);
-    EXPECT_EQ(Location(7,8), locations[1]);
-    EXPECT_EQ(Location(11,12), locations[2]);
+    EXPECT_EQ(Location(5, 6), locations[0]);
+    EXPECT_EQ(Location(7, 8), locations[1]);
+    EXPECT_EQ(Location(11, 12), locations[2]);
 }
 
 TEST(Locations, baking) {
@@ -352,8 +438,8 @@ TEST(Items, mergeDecade) {
     b.filename = "file#.ext";
     a.indices = {11,21};
     b.indices = {5,6};
-    EXPECT_TRUE(merge(a,b));
-    EXPECT_EQ(VALUES( { 11,21,5,6}), a.indices);
+    EXPECT_TRUE(merge(a, b));
+    EXPECT_EQ(VALUES( { 11, 21, 5, 6 }), a.indices);
     EXPECT_EQ(0, a.padding);
     EXPECT_EQ("file#.ext", a.filename);
 }
@@ -364,8 +450,8 @@ TEST(Items, mergeThousands) {
     b.filename = "file####.ext";
     a.indices = {11,21};
     b.indices = {1234,1235};
-    EXPECT_TRUE(merge(a,b));
-    EXPECT_EQ(VALUES( { 11,21,1234,1235}), a.indices);
+    EXPECT_TRUE(merge(a, b));
+    EXPECT_EQ(VALUES( { 11, 21, 1234, 1235 }), a.indices);
     EXPECT_EQ(0, a.padding);
     EXPECT_EQ("file#.ext", a.filename);
 }
@@ -378,11 +464,11 @@ struct FileProvider {
                     filenames( { STRING(filename) }), current(filenames.begin()), end(filenames.end()) {
     }
     FileProvider(vector<STRING> &&files) :
-    filenames( std::move(files)), current(filenames.begin()),end(filenames.end()) {
+                    filenames(std::move(files)), current(filenames.begin()), end(filenames.end()) {
     }
     bool operator()(FilesystemEntry &entry) {
         if (current == end)
-        return false;
+            return false;
         entry.pFilename = current->c_str();
         entry.isDirectory = false;
         ++current;

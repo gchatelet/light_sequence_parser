@@ -14,7 +14,7 @@ tests: all_tests
 	./$^ --gtest_filter=-Performance*
 
 all_tests: test/tests.cpp
-	$(CC) $(CFLAGS) $^ -o $@ -lgtest_main
+	$(CC) $(CFLAGS) $^ -o $@ -lgtest_main -lgtest
 
 libsequenceparser.a: FolderParser.o
 	ar -cvq libsequenceparser.a FolderParser.o
