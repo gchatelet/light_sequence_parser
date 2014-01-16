@@ -456,6 +456,20 @@ TEST(Items, mergeThousands) {
     EXPECT_EQ("file#.ext", a.filename);
 }
 
+TEST(Items, mergeMismatch) {
+    Item a, b, c;
+    a.filename = "file#.ext";
+    b.filename = "file##xyz.ext";
+    c.filename = "filexyz##.ext";
+    a.indices = {1, 2};
+    b.indices = {10};
+    c.indices = {20};
+    EXPECT_FALSE(merge(a, b));
+    EXPECT_FALSE(merge(a, c));
+    EXPECT_EQ(VALUES( { 1, 2 }), a.indices);
+    EXPECT_EQ("file#.ext", a.filename);
+}
+
 struct FileProvider {
     const vector<STRING> filenames;
     vector<STRING>::const_iterator current;
