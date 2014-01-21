@@ -19,28 +19,30 @@ namespace sequence {
 
 namespace details {
 
+namespace  {
+
 typedef typename STRING::iterator STRING_ITR;
 typedef typename STRING::const_iterator STRING_CITR;
 
-static inline bool isDigit(CHAR c) {
+inline bool isDigit(CHAR c) {
 	return c >= CHAR('0') && c <= CHAR('9');
 }
 
 template<typename ITR>
-static inline ITR advanceToSharp(ITR itr) {
+inline ITR advanceToSharp(ITR itr) {
 	while (*itr && *itr != Item::PADDING_CHAR)
 		++itr;
 	return itr;
 }
 
 template<typename ITR>
-static inline ITR advanceToNotSharp(ITR itr) {
+inline ITR advanceToNotSharp(ITR itr) {
 	while (*itr && *itr == Item::PADDING_CHAR)
 		++itr;
 	return itr;
 }
 
-static inline void bake(const STRING_ITR pStart, STRING_ITR pEnd, index_type value) {
+inline void bake(const STRING_ITR pStart, STRING_ITR pEnd, index_type value) {
 	while (pEnd != pStart) {
 		--pEnd;
 		*pEnd = '0' + value % 10;
@@ -48,14 +50,14 @@ static inline void bake(const STRING_ITR pStart, STRING_ITR pEnd, index_type val
 	}
 }
 
-static inline size_t countPadding(const STRING &pattern) {
+inline size_t countPadding(const STRING &pattern) {
 	return count(pattern.begin(), pattern.end(), Item::PADDING_CHAR);
 }
 
 typedef std::pair<size_t, size_t> Location;
 typedef std::vector<Location> Locations;
 
-static Locations getLocations(size_t count, const STRING &pattern) {
+Locations getLocations(size_t count, const STRING &pattern) {
 	Locations locations;
 	locations.reserve(count);
 	auto begin = pattern.begin();
@@ -72,13 +74,15 @@ static Locations getLocations(size_t count, const STRING &pattern) {
 	return locations;
 }
 
-static inline void bake(const Location &location, STRING &string, index_type value) {
+void bake(const Location &location, STRING &string, index_type value) {
 	auto begin = string.begin();
 	auto end = string.begin();
 	std::advance(begin, location.first);
 	std::advance(end, location.second);
 	bake(begin, end, value);
 }
+
+}  // namespace
 
 struct PatternSet {
 private:
@@ -378,11 +382,13 @@ public:
 
 };
 
-static bool equalsButNotPaddingChar(const CHAR a, const CHAR b) {
+namespace  {
+
+bool equalsButNotPaddingChar(const CHAR a, const CHAR b) {
 	return a == b && a != Item::PADDING_CHAR;
 }
 
-static bool merge(Item &a, Item &b) {
+bool merge(Item &a, Item &b) {
 	if (a.getType() != Item::INDICED || b.getType() != Item::INDICED) {
 		return false;
 	}
@@ -413,7 +419,7 @@ static bool merge(Item &a, Item &b) {
 	return true;
 }
 
-static void bakeSingleton(Item &item) {
+void bakeSingleton(Item &item) {
 	size_t indexToBake;
 	switch (item.getType()) {
 	case Item::INDICED: {
@@ -439,11 +445,11 @@ static void bakeSingleton(Item &item) {
 	bake(locations[0], item.filename, indexToBake);
 }
 
-static inline bool less(const Item &a, const Item &b) {
+inline bool less(const Item &a, const Item &b) {
 	return a.filename < b.filename;
 }
 
-static void reduceToPackedItems(Item &item, std::function<void(Item&&)> push) {
+void reduceToPackedItems(Item &item, std::function<void(Item&&)> push) {
     if (item.getType() == Item::SINGLE) {
         push(std::move(item));
         return;
@@ -490,17 +496,17 @@ static void reduceToPackedItems(Item &item, std::function<void(Item&&)> push) {
     }
 }
 
-static int retainNone(const PatternSet& set) {
+int retainNone(const PatternSet& set) {
 	assert(!set.isReady());
 	return -1;
 }
 
-static int retainLastLocation(const PatternSet& set) {
+int retainLastLocation(const PatternSet& set) {
 	assert(!set.isReady());
 	return 0;
 }
 
-static int retainHighestVariance(const PatternSet& set) {
+int retainHighestVariance(const PatternSet& set) {
 	assert(!set.isReady());
 	std::vector<size_t> locationVariance;
 	locationVariance.reserve(set.getLocationCount());
@@ -518,7 +524,7 @@ static int retainHighestVariance(const PatternSet& set) {
 	return maxCount > 1 ? -1 : std::distance(locationVariance.begin(), minItr);
 }
 
-static int retainFirstLocation(const PatternSet& set) {
+int retainFirstLocation(const PatternSet& set) {
 	assert(!set.isReady());
 	const auto lastIndex = set.getLocationCount() - 1;
 	const auto&pattern = set.getPattern();
@@ -534,7 +540,7 @@ static int retainFirstLocation(const PatternSet& set) {
 
 typedef std::function<int(const PatternSet&)> SplitIndexFunction;
 
-static inline SplitIndexFunction getSplitter(SplitIndexStrategy strategy) {
+inline SplitIndexFunction getSplitter(SplitIndexStrategy strategy) {
 	switch (strategy) {
 	case RETAIN_NONE:
 		return retainNone;
@@ -548,6 +554,9 @@ static inline SplitIndexFunction getSplitter(SplitIndexStrategy strategy) {
 		throw std::invalid_argument("Unknown split index strategy");
 	}
 }
+
+}  // namespace
+
 }  // namespace details
 
 FolderContent parse(const Configuration &config, const GetNextEntryFunction &getNextEntry) {
