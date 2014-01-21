@@ -444,39 +444,50 @@ static inline bool less(const Item &a, const Item &b) {
 }
 
 static void reduceToPackedItems(Item &item, std::function<void(Item&&)> push) {
-	if(item.getType()==Item::SINGLE) {
-		push(std::move(item));
-		return;
-	}
-	if(item.padding==-1) {
-		item.padding = countPadding(item.filename);
-	}
-	const auto &indices = item.indices;
-	assert(!indices.empty());
-	sort(item.indices.begin(),item.indices.end());
-	VALUES derivative(indices.size());
-	std::adjacent_difference(indices.begin(), indices.end(), derivative.begin());
-	const auto step = std::max(index_type(1), *std::min_element(derivative.begin()+1, derivative.end()));
-	auto itr = indices.begin();
-	typedef std::pair<size_t, size_t> Range;
-	std::vector<Range > ranges;
-	for(auto delta : derivative) {
-		const auto current= *itr++;
-		if(delta==step && !ranges.empty()) {
-			ranges.back().second = current;
-		} else {
-			ranges.push_back(std::make_pair(current, current));
-		}
-	}
-	for(const auto &range: ranges) {
-		Item tmp;
-		tmp.filename = item.filename;
-		tmp.padding = item.padding;
-		tmp.step = step;
-		tmp.start = range.first;
-		tmp.end = range.second;
-		push(std::move(tmp));
-	}
+    if (item.getType() == Item::SINGLE) {
+        push(std::move(item));
+        return;
+    }
+    if (item.padding == -1) {
+        item.padding = countPadding(item.filename);
+    }
+    const auto &indices = item.indices;
+    assert(!indices.empty());
+    if (indices.size() == 1) {
+        Item tmp;
+        tmp.filename = item.filename;
+        tmp.padding = item.padding;
+        tmp.step = 1;
+        tmp.start = indices[0];
+        tmp.end = indices[0];
+        push(std::move(tmp));
+        return;
+    }
+    sort(item.indices.begin(), item.indices.end());
+    VALUES derivative(indices.size());
+    std::adjacent_difference(indices.begin(), indices.end(), derivative.begin());
+    assert(indices.size() >= 2);
+    const auto step = std::max(index_type(1), *std::min_element(derivative.begin() + 1, derivative.end()));
+    auto itr = indices.begin();
+    typedef std::pair<size_t, size_t> Range;
+    std::vector<Range> ranges;
+    for (auto delta : derivative) {
+        const auto current = *itr++;
+        if (delta == step && !ranges.empty()) {
+            ranges.back().second = current;
+        } else {
+            ranges.emplace_back(current, current);
+        }
+    }
+    for (const auto &range : ranges) {
+        Item tmp;
+        tmp.filename = item.filename;
+        tmp.padding = item.padding;
+        tmp.step = step;
+        tmp.start = range.first;
+        tmp.end = range.second;
+        push(std::move(tmp));
+    }
 }
 
 static int retainNone(const PatternSet& set) {
