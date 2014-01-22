@@ -397,7 +397,7 @@ bool merge(Item &a, Item &b) {
 	const auto bBegin = b.filename.begin();
 	const auto bEnd = b.filename.end();
 	const auto prefix = std::mismatch(aBegin, aEnd, bBegin, equalsButNotPaddingChar);
-	if (prefix.first == aEnd || prefix.second == bEnd || *prefix.first != Item::PADDING_CHAR) {
+	if (prefix.first == aEnd || prefix.second == bEnd || *prefix.first != Item::PADDING_CHAR || *prefix.second != Item::PADDING_CHAR) {
 		return false;
 	}
 	const auto arBegin = a.filename.rbegin();
@@ -405,7 +405,7 @@ bool merge(Item &a, Item &b) {
 	const auto brBegin = b.filename.rbegin();
 	const auto brEnd = b.filename.rend();
 	const auto suffix = std::mismatch(arBegin, arEnd, brBegin, equalsButNotPaddingChar);
-	if (suffix.first == arEnd || suffix.second == brEnd || *suffix.first != Item::PADDING_CHAR) {
+	if (suffix.first == arEnd || suffix.second == brEnd || *suffix.first != Item::PADDING_CHAR || *suffix.second != Item::PADDING_CHAR) {
 		return false;
 	}
 	/* appending b indices to a */
@@ -582,13 +582,14 @@ FolderContent parse(const Configuration &config, const GetNextEntryFunction &get
 	for (auto &item : trie.reduceToIndicedItems(splitFunction))
 		files.emplace_back(std::move(item));
 	if (config.mergePadding && files.size() >= 2) {
-		sort(files.begin(), files.end(), less);
-		auto currentItem = files.begin();
-		for (auto nextItem = currentItem + 1; nextItem != files.end(); ++nextItem)
-			if (!merge(*currentItem, *nextItem))
-				*(++currentItem) = *nextItem;
-		assert(currentItem != files.end());
-		files.erase(++currentItem, files.end());
+		size_t i = 0, j = 0; 
+		files.erase(std::remove_if(files.begin(), files.end(), [&](const Item& item) {
+				for(j=i+1; j<files.size(); j++)
+					if(merge(files[j], files[i]))
+						break;
+				i++;
+				return (j!=files.size());
+			}), files.end());
 	}
 	if (config.pack) {
 		Items tmp;
