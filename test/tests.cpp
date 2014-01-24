@@ -439,7 +439,7 @@ TEST(Items, mergeDecade) {
     a.indices = {11,21};
     b.indices = {5,6};
     EXPECT_TRUE(merge(a, b));
-    EXPECT_EQ(VALUES( { 11, 21, 5, 6 }), a.indices);
+    EXPECT_EQ(VALUES({5, 6, 11, 21}), a.indices);
     EXPECT_EQ(0, a.padding);
     EXPECT_EQ("file#.ext", a.filename);
 }
@@ -448,12 +448,33 @@ TEST(Items, mergeThousands) {
     Item a, b;
     a.filename = "file##.ext";
     b.filename = "file####.ext";
-    a.indices = {11,21};
-    b.indices = {1234,1235};
+    a.indices = {11, 21};
+    b.indices = {1234, 1235};
     EXPECT_TRUE(merge(a, b));
-    EXPECT_EQ(VALUES( { 11, 21, 1234, 1235 }), a.indices);
+    EXPECT_EQ(VALUES({11, 21, 1234, 1235}), a.indices);
     EXPECT_EQ(0, a.padding);
     EXPECT_EQ("file#.ext", a.filename);
+}
+
+TEST(Items, mergeMismatch) {
+    Item a, b, c;
+    a.filename = "file#.ext";
+    b.filename = "file##xyz.ext";
+    c.filename = "filexyz##.ext";
+    a.indices = {1, 2};
+    b.indices = {10};
+    c.indices = {20};
+    EXPECT_FALSE(merge(a, b));
+    EXPECT_FALSE(merge(a, c));
+}
+
+TEST(Items, mergeSharedIndices) {
+    Item a, b;
+    a.filename = "file###.ext";
+    b.filename = "file#.ext";
+    a.indices = {1, 2};
+    b.indices = {1, 5};
+    EXPECT_FALSE(merge(a, b));
 }
 
 struct FileProvider {
@@ -552,6 +573,7 @@ TEST(Correctness, bakeSingleton) {
     const auto & file = result.files[0];
     EXPECT_EQ(Item::SINGLE, file.getType());
 }
+
 
 } // namespace details
 

@@ -384,39 +384,78 @@ public:
 
 namespace  {
 
-bool equalsButNotPaddingChar(const CHAR a, const CHAR b) {
-	return a == b && a != Item::PADDING_CHAR;
-}
+/**
+ * We want to merge items that are indiced are which share same prefix and
+ * suffix but which may have a different padding.
+ * eg.
+ *  prefix##suffix  [1,99]
+ *  prefix###suffix [105]
+ */
+bool merge(Item &itemA, Item &itemB) {
+	if (itemA.getType() != Item::INDICED || itemB.getType() != Item::INDICED) {
+		return false;
+	}
+	auto& a = itemA.filename;
+	auto& b = itemB.filename;
 
-bool merge(Item &a, Item &b) {
-	if (a.getType() != Item::INDICED || b.getType() != Item::INDICED) {
-		return false;
-	}
-	const auto aBegin = a.filename.begin();
-	const auto aEnd = a.filename.end();
-	const auto bBegin = b.filename.begin();
-	const auto bEnd = b.filename.end();
-	const auto prefix = std::mismatch(aBegin, aEnd, bBegin, equalsButNotPaddingChar);
-	if (prefix.first == aEnd || prefix.second == bEnd || *prefix.first != Item::PADDING_CHAR) {
-		return false;
-	}
-	const auto arBegin = a.filename.rbegin();
-	const auto arEnd = a.filename.rend();
-	const auto brBegin = b.filename.rbegin();
-	const auto brEnd = b.filename.rend();
-	const auto suffix = std::mismatch(arBegin, arEnd, brBegin, equalsButNotPaddingChar);
-	if (suffix.first == arEnd || suffix.second == brEnd || *suffix.first != Item::PADDING_CHAR) {
-		return false;
-	}
-	/* appending b indices to a */
-	a.indices.insert(a.indices.end(), b.indices.begin(), b.indices.end());
-	a.padding = 0;
-	const auto prefixSize = std::distance(aBegin, prefix.first) + 1; // with one padding char
-	const auto suffixSize = std::distance(arBegin, suffix.first);
-	const auto newSize = prefixSize + suffixSize;
-	a.filename.resize(newSize);
-	std::copy(bEnd - suffixSize, bEnd, aBegin + prefixSize);
-	return true;
+	// Checking same prefix
+	// prefix##suffix
+	// prefix###suffix
+	// ^------^
+	const auto common = std::mismatch(a.begin(), a.end(), b.begin());
+
+	// if one of the iterators is end, we can't merge
+	auto itrA = common.first;
+	auto itrB = common.second;
+    if (itrA == a.end() || itrB == b.end())
+        return false;
+
+    // one the the iterators should point to PADDING_CHAR, otherwise we
+    // simply don't have a common prefix
+    // abc##suffix
+    // abef###suffix
+    // ^^
+    if(*itrA!=Item::PADDING_CHAR && *itrB!=Item::PADDING_CHAR)
+        return false;
+
+    // advancing pointers to move out of PADDING_CHAR
+    itrA = advanceToNotSharp(itrA);
+    itrB = advanceToNotSharp(itrB);
+
+    // now the rest should compare equal, otherwise we can't merge
+    // prefix##suffix
+    //         ^----^
+    // prefix###suffix
+    //          ^----^
+    if (std::mismatch(itrA, a.end(), itrB) != std::make_pair(a.end(), b.end()))
+        return false;
+
+    // checking if some indices appear in both containers
+    VALUES allValues;
+    // appending all values
+    allValues.reserve(itemA.indices.size() + itemB.indices.size());
+    allValues.insert(allValues.end(), itemA.indices.begin(), itemA.indices.end());
+    allValues.insert(allValues.end(), itemB.indices.begin(), itemB.indices.end());
+    // sorting if needed
+    if (!std::is_sorted(allValues.begin(), allValues.end()))
+            std::sort(allValues.begin(), allValues.end());
+    // we must not have twice the same value in there
+    if (std::adjacent_find(allValues.begin(), allValues.end()) != allValues.end())
+        return false;
+
+    // now the two patterns are compatible
+    // appending b indices to a
+    itemA.indices = std::move(allValues);
+
+    // If a's padding is already 0 we're done.
+    if(itemA.padding == 0)
+        return true;
+
+    // Otherwise setting a's padding to 0
+    itemA.padding = 0;
+    // and keeping only one Item::PADDING_CHAR
+    a.erase(std::unique(a.begin(), a.end(), [](CHAR a, CHAR b) {return a==b && a==Item::PADDING_CHAR;}), a.end());
+    return true;
 }
 
 void bakeSingleton(Item &item) {
