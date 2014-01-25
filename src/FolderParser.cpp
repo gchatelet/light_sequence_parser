@@ -214,7 +214,7 @@ private:
 				for (size_t loc = 0; loc < locations.size(); ++loc) {
 					bake(locations[loc], pattern, valueArrays[loc][i]);
 				}
-				items.push_back(STRING(pattern));
+				items.emplace_back(pattern);
 			}
 		}
 	}

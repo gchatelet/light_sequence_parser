@@ -38,7 +38,7 @@ std::string getMatcherString(std::string pattern) {
 Item createSingleFile(std::string filename) {
     if (containsPatternCharacter(filename))
         return {};
-    return Item(std::move(filename));
+    return { std::move(filename) };
 }
 
 Item createSequence(std::string prefix, std::string suffix, index_type start, index_type end, unsigned char padding, unsigned char step) {

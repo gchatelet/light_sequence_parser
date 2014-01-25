@@ -25,6 +25,33 @@ TEST(Items, type) {
     EXPECT_EQ(Item::PACKED, item.getType());
 }
 
+TEST(Items, defaultCTor) {
+    Item item;
+    EXPECT_EQ(item.start, -1);
+    EXPECT_EQ(item.end, -1);
+    EXPECT_EQ(item.padding, -1);
+    EXPECT_EQ(item.step, -1);
+}
+
+TEST(Items, moveCTor) {
+    Item origin;
+    origin.start = 1;
+    origin.end = 2;
+    origin.padding = 3;
+    origin.step = 4;
+    origin.filename = "filename";
+    origin.indices= {1,2,3,4};
+    const Item moved(std::move(origin));
+    EXPECT_EQ(moved.start, 1);
+    EXPECT_EQ(moved.end, 2);
+    EXPECT_EQ(moved.padding, 3);
+    EXPECT_EQ(moved.step, 4);
+    EXPECT_EQ(moved.filename, "filename");
+    EXPECT_EQ(moved.indices, VALUES( { 1, 2, 3, 4 }));
+    EXPECT_TRUE(origin.filename.empty());
+    EXPECT_TRUE(origin.indices.empty());
+}
+
 /**
  * Tools tests
  */
