@@ -574,6 +574,22 @@ TEST(Correctness, bakeSingleton) {
     EXPECT_EQ(Item::SINGLE, file.getType());
 }
 
+TEST(Correctness, merge) {
+    FileProvider provider({"file1.ext", "file10.ext", "file10xyz.ext", "file100.ext"});
+    Configuration conf;
+    conf.mergePadding = true;
+    conf.sort = true;
+    conf.bakeSingleton = true;
+    auto result = parse(conf, provider);
+    ASSERT_EQ(2, result.files.size());
+    const auto & first = result.files[0];
+    EXPECT_EQ(Item::INDICED, first.getType());
+    EXPECT_EQ(VALUES({1,10,100}), first.indices);
+    EXPECT_EQ("file#.ext", first.filename);
+    const auto & second = result.files[1];
+    EXPECT_EQ(Item::SINGLE, second.getType());
+    EXPECT_EQ("file10xyz.ext", second.filename);
+}
 
 } // namespace details
 

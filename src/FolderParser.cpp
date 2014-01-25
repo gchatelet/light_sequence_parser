@@ -384,6 +384,26 @@ public:
 
 namespace  {
 
+template<typename Container>
+bool sortIfNeeded(Container& container) {
+    if (std::is_sorted(container.begin(), container.end()))
+        return false;
+    std::sort(container.begin(), container.end());
+    return true;
+}
+
+template<typename Container, typename Predicate>
+bool sortIfNeeded(Container& container, Predicate compare) {
+    if (std::is_sorted(container.begin(), container.end(), compare))
+        return false;
+    std::sort(container.begin(), container.end(), compare);
+    return true;
+}
+
+void eraseDuplicatedPaddingChar(std::string&a) {
+    a.erase(std::unique(a.begin(), a.end(), [](CHAR a, CHAR b) {return a==b && a==Item::PADDING_CHAR;}), a.end());
+}
+
 /**
  * We want to merge items that are indiced are which share same prefix and
  * suffix but which may have a different padding.
@@ -437,8 +457,7 @@ bool merge(Item &itemA, Item &itemB) {
     allValues.insert(allValues.end(), itemA.indices.begin(), itemA.indices.end());
     allValues.insert(allValues.end(), itemB.indices.begin(), itemB.indices.end());
     // sorting if needed
-    if (!std::is_sorted(allValues.begin(), allValues.end()))
-            std::sort(allValues.begin(), allValues.end());
+    sortIfNeeded(allValues);
     // we must not have twice the same value in there
     if (std::adjacent_find(allValues.begin(), allValues.end()) != allValues.end())
         return false;
@@ -454,7 +473,7 @@ bool merge(Item &itemA, Item &itemB) {
     // Otherwise setting a's padding to 0
     itemA.padding = 0;
     // and keeping only one Item::PADDING_CHAR
-    a.erase(std::unique(a.begin(), a.end(), [](CHAR a, CHAR b) {return a==b && a==Item::PADDING_CHAR;}), a.end());
+    eraseDuplicatedPaddingChar(a);
     return true;
 }
 
@@ -485,7 +504,10 @@ void bakeSingleton(Item &item) {
 }
 
 inline bool less(const Item &a, const Item &b) {
-	return a.filename < b.filename;
+    std::string fileA(a.filename), fileB(b.filename);
+    eraseDuplicatedPaddingChar(fileA);
+    eraseDuplicatedPaddingChar(fileB);
+    return fileA == fileB ? a.padding < b.padding : fileA < fileB;
 }
 
 void reduceToPackedItems(Item &item, std::function<void(Item&&)> push) {
@@ -508,7 +530,7 @@ void reduceToPackedItems(Item &item, std::function<void(Item&&)> push) {
         push(std::move(tmp));
         return;
     }
-    sort(item.indices.begin(), item.indices.end());
+    sortIfNeeded(item.indices);
     VALUES derivative(indices.size());
     std::adjacent_difference(indices.begin(), indices.end(), derivative.begin());
     assert(indices.size() >= 2);
@@ -550,7 +572,7 @@ int retainHighestVariance(const PatternSet& set) {
 	std::vector<size_t> locationVariance;
 	locationVariance.reserve(set.getLocationCount());
 	for (auto copy : set.getValuesArrays()) {
-		std::sort(copy.begin(), copy.end());
+	    sortIfNeeded(copy);
 		auto uniqueItr = std::unique(copy.begin(), copy.end());
 		auto count = distance(copy.begin(), uniqueItr);
 		locationVariance.push_back(count);
@@ -599,51 +621,50 @@ inline SplitIndexFunction getSplitter(SplitIndexStrategy strategy) {
 }  // namespace details
 
 FolderContent parse(const Configuration &config, const GetNextEntryFunction &getNextEntry) {
-	using namespace sequence::details;
+    using namespace sequence::details;
 
-	Trie trie;
-	FolderContent result;
-	Items &directories = result.directories;
-	Items &files = result.files;
-	{ /* ingest */
-		FilesystemEntry entry;
-		while (getNextEntry(entry)) {
-			if (entry.isDirectory)
-				result.directories.emplace_back(STRING(entry.pFilename));
-			else {
-				const auto overflowed = trie.push(entry.pFilename);
-				if (overflowed)
-					files.emplace_back(entry.pFilename);
-			}
-		}
-	}
-	const SplitIndexFunction splitFunction = getSplitter(config.getPivotIndex);
-	for (auto &item : trie.reduceToIndicedItems(splitFunction))
-		files.emplace_back(std::move(item));
-	if (config.mergePadding && files.size() >= 2) {
-		sort(files.begin(), files.end(), less);
-		auto currentItem = files.begin();
-		for (auto nextItem = currentItem + 1; nextItem != files.end(); ++nextItem)
-			if (!merge(*currentItem, *nextItem))
-				*(++currentItem) = *nextItem;
-		assert(currentItem != files.end());
-		files.erase(++currentItem, files.end());
-	}
-	if (config.pack) {
-		Items tmp;
-		tmp.reserve(files.size());
-		for (auto &item : files)
-			reduceToPackedItems(item, [&tmp](Item&&i) {tmp.emplace_back(i);});
-		tmp.swap(files);
-	}
-	if (config.bakeSingleton)
-		for (auto &item : files)
-			bakeSingleton(item);
-	if (config.sort) {
-		sort(directories.begin(), directories.end(), less);
-		sort(files.begin(), files.end(), less);
-	}
-	return result;
+    Trie trie;
+    FolderContent result;
+    Items &directories = result.directories;
+    Items &files = result.files;
+    { /* ingest */
+        FilesystemEntry entry;
+        while (getNextEntry(entry)) {
+            if (entry.isDirectory)
+                result.directories.emplace_back(STRING(entry.pFilename));
+            else {
+                const auto overflowed = trie.push(entry.pFilename);
+                if (overflowed)
+                    files.emplace_back(entry.pFilename);
+            }
+        }
+    }
+    const SplitIndexFunction splitFunction = getSplitter(config.getPivotIndex);
+    for (auto &item : trie.reduceToIndicedItems(splitFunction))
+        files.emplace_back(std::move(item));
+    if (config.mergePadding && files.size() >= 2) {
+        sortIfNeeded(files, less);
+        auto currentItr = files.begin();
+        for (auto nextItr = currentItr + 1; nextItr != files.end(); ++nextItr)
+            if (!merge(*currentItr, *nextItr))
+                *(++currentItr) = std::move(*nextItr);
+        assert(currentItr != files.end());
+        files.erase(++currentItr, files.end());
+    }
+    if (config.pack) {
+        Items tmp;
+        tmp.reserve(files.size());
+        for (auto &item : files)
+            reduceToPackedItems(item, [&tmp](Item&&i) {tmp.emplace_back(i);});
+        tmp.swap(files);
+    }
+    if (config.bakeSingleton) for (auto &item : files)
+        bakeSingleton(item);
+    if (config.sort) {
+        sortIfNeeded(directories, less);
+        sortIfNeeded(files, less);
+    }
+    return result;
 }
 
 #ifdef _WIN64
