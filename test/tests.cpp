@@ -618,6 +618,27 @@ TEST(Correctness, merge) {
     EXPECT_EQ("file10xyz.ext", second.filename);
 }
 
+TEST(Correctness, merge2) {
+    FileProvider provider( { ".directory", "f0101.ext", "f0100.ext", "f0098.ext", "f0099.ext" });
+    Configuration conf;
+    conf.mergePadding = true;
+    conf.sort = true;
+    conf.bakeSingleton = true;
+    conf.pack = true;
+    auto result = parse(conf, provider);
+    ASSERT_EQ(2, result.files.size());
+    const auto & first = result.files.at(0);
+    EXPECT_EQ(Item::SINGLE, first.getType());
+    EXPECT_EQ(".directory", first.filename);
+    const auto & second = result.files.at(1);
+    EXPECT_EQ(Item::PACKED, second.getType());
+    EXPECT_TRUE(second.indices.empty());
+    EXPECT_EQ(second.start, 98);
+    EXPECT_EQ(second.end, 101);
+    EXPECT_EQ(second.step, 1);
+    EXPECT_EQ("f####.ext", second.filename);
+}
+
 } // namespace details
 
 } // namespace sequence

@@ -645,9 +645,15 @@ FolderContent parse(const Configuration &config, const GetNextEntryFunction &get
     if (config.mergePadding && files.size() >= 2) {
         sortIfNeeded(files, less);
         auto currentItr = files.begin();
-        for (auto nextItr = currentItr + 1; nextItr != files.end(); ++nextItr)
-            if (!merge(*currentItr, *nextItr))
-                *(++currentItr) = std::move(*nextItr);
+        for (auto nextItr = currentItr + 1; nextItr != files.end(); ++nextItr) {
+            const bool merged = merge(*currentItr, *nextItr);
+            if (!merged) {
+                ++currentItr;
+                if (currentItr != nextItr) {
+                    *(currentItr) = std::move(*nextItr);
+                }
+            }
+        }
         assert(currentItr != files.end());
         files.erase(++currentItr, files.end());
     }
