@@ -1,10 +1,13 @@
+#include <gtest/gtest.h>
+
 #define GTEST
 #include "../src/FolderParser.cpp"
 #include "../src/Tools.cpp"
+#undef GTEST
+
 
 using namespace std;
 
-#include <gtest/gtest.h>
 
 namespace sequence {
 
