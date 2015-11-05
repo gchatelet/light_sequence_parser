@@ -58,6 +58,15 @@ std::regex getMatcher(const std::string& pattern, bool ignoreCase = false);
  */
 bool match(const std::regex& matcher, const Item& candidate);
 
+/**
+ * @brief getPrefixAndSuffix - get prefix and suffix from filename
+ * @param filename - in filename
+ * @param prefix - out prexix
+ * @param suffix - out suffix
+ */
+void getPrefixAndSuffix(const std::string &filename, std::string &prefix, std::string &suffix);
+
+
 }  // namespace sequence
 
 #endif /* TOOLS_HPP_ */

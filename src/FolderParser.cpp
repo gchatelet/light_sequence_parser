@@ -1,5 +1,5 @@
 #include <sequence/Parser.hpp>
-
+#include <sequence/Tools.hpp>
 #ifdef GTEST
 #include <gtest/gtest_prod.h>
 #else
@@ -23,6 +23,17 @@ namespace  {
 
 typedef typename STRING::iterator STRING_ITR;
 typedef typename STRING::const_iterator STRING_CITR;
+
+template<typename T> T limit_max(const T&) {
+    return std::numeric_limits<T>::max();
+}
+
+unsigned char digits(size_t frame) {
+    unsigned char count = 1;
+    for (; frame > 9; frame /= 10, ++count)
+        ;
+    return count;
+}
 
 inline bool isDigit(CHAR c) {
 	return c >= CHAR('0') && c <= CHAR('9');
@@ -462,6 +473,17 @@ bool merge(Item &itemA, Item &itemB) {
     if (std::adjacent_find(allValues.begin(), allValues.end()) != allValues.end())
         return false;
 
+    //need add check padding!!!
+    //if start & end has less numbers than padding
+    //we can't merge it
+    int paddingA = digits(itemA.indices[0]);
+    int paddingB = digits(itemB.indices[0]);
+
+    if (itemA.padding > 0 && itemA.padding != paddingA)
+        return false;
+    if (itemB.padding > 0 && itemB.padding != paddingB)
+        return false;
+
     // now the two patterns are compatible
     // appending b indices to a
     itemA.indices = std::move(allValues);
@@ -498,8 +520,20 @@ void bakeSingleton(Item &item) {
 	default:
 		return;
 	}
-	const auto locations = getLocations(1, item.filename);
-	assert(locations.size()==1);
+
+    int padding = digits(item.start);
+    auto locations = getLocations(1, item.filename);
+
+    assert(locations.size()==1);
+    if (item.start !=-1 && padding > locations[0].second - locations[0].first){
+        std::string prefix;
+        std::string suffix;
+        getPrefixAndSuffix(item.filename, prefix, suffix);
+        item = createSequence(prefix, suffix, item.start, item.end, padding, item.step);
+        locations = getLocations(1, item.filename);
+        assert(locations.size()==1);
+        assert(padding == locations[0].second - locations[0].first);
+    }
 	bake(locations[0], item.filename, indexToBake);
 }
 
@@ -535,6 +569,18 @@ void reduceToPackedItems(Item &item, std::function<void(Item&&)> push) {
     std::adjacent_difference(indices.begin(), indices.end(), derivative.begin());
     assert(indices.size() >= 2);
     const auto step = std::max(index_type(1), *std::min_element(derivative.begin() + 1, derivative.end()));
+    if (step>limit_max(item.step)){
+        for (auto index : item.indices){
+            Item tmp;
+            tmp.filename = item.filename;
+            tmp.padding = item.padding;
+            tmp.step = 1;
+            tmp.start = index;
+            tmp.end = index;
+            push(std::move(tmp));
+        }
+        return;
+    }
     auto itr = indices.begin();
     typedef std::pair<size_t, size_t> Range;
     std::vector<Range> ranges;
