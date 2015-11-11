@@ -643,7 +643,7 @@ TEST(Correctness, merge2) {
     EXPECT_EQ("f####.ext", second.filename);
 }
 
-} // namespace detailsz
+} // namespace details
 
 } // namespace sequence
 
