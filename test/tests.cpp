@@ -5,6 +5,7 @@
 #include "../src/Tools.cpp"
 #undef GTEST
 
+using sequence::Item;
 
 using namespace std;
 
@@ -645,3 +646,307 @@ TEST(Correctness, merge2) {
 } // namespace details
 
 } // namespace sequence
+
+namespace std {
+
+ostream& operator<<(ostream& s, const sequence::VALUES& values) {
+    s << "[";
+    auto i = values.begin();
+    if(i!=values.end()) {
+        s << *i;
+        ++i;
+        for(; i != values.end(); ++i) {
+            s << ", " << *i;
+        }
+    }
+    s << "]";
+    return s;
+}
+
+ostream& operator<<(ostream& s, const sequence::Item& item) {
+    switch (item.getType()) {
+    case sequence::Item::INVALID:
+        s << "invalid";
+        break;
+    case sequence::Item::SINGLE:
+        s << item.filename;
+        break;
+    case sequence::Item::INDICED:
+        s << item.filename << " (" << item.indices <<  ")";
+        break;
+    case sequence::Item::PACKED:
+        s << item.filename << " (" << item.start << "-" << item.end << "+" << int(item.step) <<  ")";
+        break;
+    }
+    return s;
+}
+
+ostream& operator<<(ostream& s, const sequence::Items& items) {
+    s << "[";
+    auto i = items.begin();
+    if(i!=items.end()) {
+        s << *i;
+        ++i;
+        for(; i != items.end(); ++i) {
+            s << ", " << *i;
+        }
+    }
+    s << "]";
+    return s;
+}
+
+ostream& operator<<(ostream& s, const sequence::FolderContent& c) {
+    return s << "files: " << c.files << ", directories: " << c.directories << ", name: " << c.name;
+}
+}
+
+namespace additionalTests {
+struct Lister {
+private:
+    vector<string> m_files;
+    bool m_noMoreFile;
+    int m_fileIndex;
+public:
+    Lister(const vector<string> &files)
+        :m_files(files), m_fileIndex(0)
+    {
+        m_noMoreFile = m_files.empty();
+    }
+
+    function<bool(sequence::FilesystemEntry&)> operator()() {
+        return [&](sequence::FilesystemEntry &entry) -> bool {
+            if(m_noMoreFile)
+                return false;
+            entry.isDirectory = false;
+            entry.pFilename = m_files[m_fileIndex].c_str();
+            //find index
+            ++m_fileIndex;
+            if ( m_fileIndex >= m_files.size() )
+                m_noMoreFile = true;
+            return true;
+        };
+    }
+
+    ~Lister() {
+    }
+};
+
+/**
+ * @brief The SequenceUtilsTester class is a basic test fixture
+ */
+class SequenceParserTest : public testing::Test {
+public:
+    SequenceParserTest() {
+
+    }
+
+    // virtual void SetUp() will be called before each test is run.  You
+    // should define it if you need to initialize the varaibles.
+    // Otherwise, this can be skipped.
+    virtual void SetUp() {
+    }
+
+    // virtual void TearDown() will be called after each test is run.
+    // You should define it if there is cleanup work to do.  Otherwise,
+    // you don't have to provide it.
+    //
+    virtual void TearDown() {
+    }
+
+    static sequence::Configuration getParserConf(bool useSequences) {
+        using namespace sequence;
+        Configuration conf;
+        if (useSequences)
+            conf.getPivotIndex = RETAIN_HIGHEST_VARIANCE;
+        else
+            conf.getPivotIndex = RETAIN_NONE;
+        conf.sort = false;
+        conf.bakeSingleton = useSequences;
+        conf.mergePadding = useSequences;
+        conf.pack = useSequences;
+        return conf;
+    }
+};
+
+/*
+  Tests for sequence parser
+*/
+
+namespace {
+template<typename T> T limit_max(const T&) {
+    return numeric_limits<T>::max();
+}
+
+Item createIndices(const std::string & prefix, const std::string & postfix, int start, int end, int padding){
+    Item item = sequence::createSequence(prefix,postfix,start,end,padding);
+    while(start<=end){
+        item.indices.push_back(start);
+        ++start;
+    }
+    return item;
+}
+}
+
+
+
+TEST_F(SequenceParserTest, merge)
+{
+    Item item0 = createIndices("file",".ext",0,9,2);
+    Item item1 = createIndices("file",".ext",0,9,1);
+    ASSERT_EQ(false, sequence::details::merge(item0, item1));
+    Item item2 = createIndices("file",".ext",10,99, 2);
+    Item item3 = createIndices("file",".ext",101,999, 3);
+    ASSERT_EQ(true, sequence::details::merge(item1, item2));
+    ASSERT_EQ(true, sequence::details::merge(item1, item3));
+}
+
+
+TEST_F(SequenceParserTest, singleIndex)
+{
+    vector<string> files;
+    files.push_back("file1.ext");
+
+    Lister lister(files);
+    auto content = sequence::parse(getParserConf(true), lister());
+
+    ASSERT_EQ(1, content.files.size());
+    const auto& item = content.files.front();
+    ASSERT_EQ(sequence::Item::Type::SINGLE, item.getType());
+    ASSERT_EQ(files.front(), item.filename);
+}
+
+TEST_F(SequenceParserTest, bigStep)
+{
+    vector<string> files;
+    files.push_back("sintel_trailer_2k_0368.png");
+    files.push_back("sintel_trailer_2k_1071.png");
+
+    Lister lister(files);
+    auto content = sequence::parse(getParserConf(true), lister());
+
+    auto expectedStep = 1071 - 368;
+    const auto& item1 = content.files.front();
+    ASSERT_GE(content.files.size(), 1);
+
+    if(expectedStep > limit_max(item1.step)) {
+        // if step field can't hold size it should be two items
+
+        ASSERT_EQ(2, content.files.size());
+        ASSERT_EQ(sequence::Item::Type::SINGLE, item1.getType());
+        ASSERT_EQ(files[0], item1.filename);
+
+        const auto& item2 = content.files[1];
+        ASSERT_EQ(sequence::Item::Type::SINGLE, item2.getType());
+        ASSERT_EQ(files[1], item2.filename);
+    } else {
+        ASSERT_EQ(1, content.files.size());
+        ASSERT_EQ(sequence::Item::Type::PACKED, item1.getType());
+        ASSERT_EQ(368, item1.start);
+        ASSERT_EQ(1071, item1.end);
+        ASSERT_EQ(expectedStep, item1.step);
+    }
+}
+
+TEST_F(SequenceParserTest, test8_10_16) {
+    vector<int> indeces{8,10,16};
+
+    vector<string> files;
+    for(const auto& i : indeces) {
+        stringstream stream;
+        stream << "file" << i << ".ext";
+        files.push_back(stream.str());
+    }
+
+    Lister lister(files);
+    ASSERT_PRED1([&](sequence::FolderContent content)->bool {
+        if(content.files.size() == indeces.size()) {
+            // single file items acceptible
+            return std::all_of( content.files.begin(), content.files.end(),
+                                [](const sequence::Item& item) -> bool{
+                return item.getType() == sequence::Item::Type::SINGLE;
+            });
+        }
+        else if(content.files.size() == indeces.size() - 1) {
+            // any pair is acceptible
+            if(content.files[0].getType() == sequence::Item::Type::PACKED) {
+                const auto& indexed = content.files[0];
+                const auto& single = content.files[1];
+
+                if(indexed.start == indeces[0] && indexed.end == indeces[2]) {
+                    return single.filename == files[1] && (indeces[2]-indeces[0]) == indexed.step;
+                } else if(indexed.start == indeces[1] && indexed.end == indeces[2]) {
+                    return single.filename == files[0] && (indeces[2]-indeces[1]) == indexed.step;
+                } else if(indexed.start == indeces[0] && indexed.end == indeces[1]) {
+                    return single.filename == files[2] && (indeces[1]-indeces[0]) == indexed.step;
+                }
+            }
+        }
+        return false;
+    }, sequence::parse(getParserConf(true), lister()));
+}
+
+TEST_F(SequenceParserTest, disconnectedSequence) {
+    vector<int> indeces{2,3,4, 10,11,12};
+    const auto width = 2;
+    vector<string> files;
+    for(const auto& i : indeces) {
+        stringstream stream;
+        stream << "file";
+        stream.width(width);
+        stream.fill('0');
+        stream << right << i;
+        stream << ".ext";
+        files.push_back(stream.str());
+    }
+
+
+    Lister lister(files);
+    auto content = sequence::parse(getParserConf(true), lister());
+    ASSERT_EQ(2, content.files.size());
+
+    ASSERT_EQ(2, content.files[0].start);
+    ASSERT_EQ(4, content.files[0].end);
+    ASSERT_EQ(1, content.files[0].step);
+    ASSERT_EQ(2, content.files[0].padding);
+    ASSERT_EQ(sequence::Item::Type::PACKED, content.files[0].getType());
+
+    ASSERT_EQ(10, content.files[1].start);
+    ASSERT_EQ(12, content.files[1].end);
+    ASSERT_EQ(1,  content.files[1].step);
+    ASSERT_PRED1([](int i)->bool{ return i == 0 || i == 2; },  content.files[1].padding);
+    ASSERT_EQ(sequence::Item::Type::PACKED, content.files[1].getType());
+}
+
+
+TEST_F(SequenceParserTest, disconnectedSequence2) {
+    vector<int> indeces{2,3,4, 100,101,102};
+    const auto width = 2;
+    vector<string> files;
+    for(const auto& i : indeces) {
+        stringstream stream;
+        stream << "file";
+        stream.width(width);
+        stream.fill('0');
+        stream << right << i;
+        stream << ".ext";
+        files.push_back(stream.str());
+    }
+
+
+    Lister lister(files);
+    auto content = sequence::parse(getParserConf(true), lister());
+    ASSERT_EQ(2, content.files.size());
+
+    ASSERT_EQ(2, content.files[0].start);
+    ASSERT_EQ(4, content.files[0].end);
+    ASSERT_EQ(1, content.files[0].step);
+    ASSERT_EQ(2, content.files[0].padding);
+    ASSERT_EQ(sequence::Item::Type::PACKED, content.files[0].getType());
+
+    ASSERT_EQ(100, content.files[1].start);
+    ASSERT_EQ(102, content.files[1].end);
+    ASSERT_EQ(1,  content.files[1].step);
+    ASSERT_PRED1([](int i)->bool{ return i == 0 || i == 3; },  content.files[1].padding);
+    ASSERT_EQ(sequence::Item::Type::PACKED, content.files[1].getType());
+}
+}
