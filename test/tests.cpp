@@ -130,8 +130,9 @@ TEST(Tools, filter) {
   Items items = {createSequence("file-", ".png", 1, 2),
                  createSequence("file-", ".jpg", 1, 2)};
   const std::regex matcher = getMatcher("file-@.png");
-  auto predicate =
-      [&](const Item &item) -> bool { return !match(matcher, item); };
+  auto predicate = [&](const Item &item) -> bool {
+    return !match(matcher, item);
+  };
   items.erase(std::remove_if(items.begin(), items.end(), predicate),
               items.end());
   EXPECT_EQ(items.size(), 1);

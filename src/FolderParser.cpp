@@ -72,10 +72,8 @@ Locations getLocations(size_t count, const STRING &pattern) {
   for (; count > 0; --count) {
     auto pPatternStart = advanceToSharp(pCurrentPatternChar);
     auto pPatternEnd = advanceToNotSharp(pPatternStart);
-    locations.emplace_back(                      //
-        std::make_pair(                          //
-            std::distance(begin, pPatternStart), //
-            std::distance(begin, pPatternEnd)));
+    locations.emplace_back(std::make_pair(std::distance(begin, pPatternStart),
+                                          std::distance(begin, pPatternEnd)));
     pCurrentPatternChar = pPatternEnd;
   }
   return locations;
@@ -103,9 +101,7 @@ public:
   PatternSet(unsigned char slotCount, STRING &&pattern)
       : valueArrays(slotCount), pattern(std::move(pattern)) {}
 
-  /**
-   * Take values read in the path and add them to the data set
-   */
+  // Take values read in the path and add them to the data set
   void addLocationValues(const VALUES &values) {
     assert(values.size() == valueArrays.size());
     auto valuesItr = valueArrays.begin();
@@ -150,10 +146,8 @@ public:
 
   inline size_t getLocationCount() const { return valueArrays.size(); }
 
-  /**
-   * A data set is ready when there is one or less location left.
-   * Otherwise it needs more splitting.
-   */
+  // A data set is ready when there is one or less location left.
+  // Otherwise it needs more splitting.
   inline bool isReady() const { return getLocationCount() <= 1; }
 
   inline bool isUnitFile() const { return valueArrays.empty(); }
@@ -175,11 +169,12 @@ private:
       const auto value = pivot[i];
       auto pFound = splitted.find(value);
       if (pFound == splitted.end()) {
-        pFound = splitted.insert( //
-                              std::make_pair(
-                                  value,
-                                  std::unique_ptr<PatternSet>(new PatternSet(
-                                      locationCount, STRING(pattern))))).first;
+        pFound =
+            splitted.insert( //
+                        std::make_pair(
+                            value, std::unique_ptr<PatternSet>(new PatternSet(
+                                       locationCount, STRING(pattern)))))
+                .first;
       }
       pFound->second->addLocationValues(tmp);
     }
@@ -286,9 +281,9 @@ private:
     Node *get(const CHAR c) {
       auto pFound = children.find(c);
       if (pFound == children.end()) {
-        pFound =
-            children.insert(std::make_pair(c, std::unique_ptr<Node>(
-                                                  new Node(this, c)))).first;
+        pFound = children.insert(std::make_pair(c, std::unique_ptr<Node>(
+                                                       new Node(this, c))))
+                     .first;
       }
       return pFound->second.get();
     }
@@ -398,17 +393,15 @@ bool sortIfNeeded(Container &container, Predicate compare) {
 
 void eraseDuplicatedPaddingChar(std::string &a) {
   a.erase(std::unique(a.begin(), a.end(), [](CHAR a, CHAR b) {
-    return a == b && a == Item::PADDING_CHAR;
-  }), a.end());
+            return a == b && a == Item::PADDING_CHAR;
+          }), a.end());
 }
 
-/**
- * We want to merge items that are indiced are which share same prefix and
- * suffix but which may have a different padding.
- * eg.
- *  prefix##suffix  [1,99]
- *  prefix###suffix [105]
- */
+// We want to merge items that are indiced are which share same prefix and
+// suffix but which may have a different padding.
+// e.g.
+//  prefix##suffix  [1,99]
+//  prefix###suffix [105]
 bool merge(Item &itemA, Item &itemB) {
   if (itemA.getType() != Item::INDICED || itemB.getType() != Item::INDICED) {
     return false;
@@ -428,19 +421,19 @@ bool merge(Item &itemA, Item &itemB) {
   if (itrA == a.end() || itrB == b.end())
     return false;
 
-  // one the the iterators should point to PADDING_CHAR, otherwise we
-  // simply don't have a common prefix
+  // One the the iterators should point to PADDING_CHAR, otherwise we simply
+  // don't have a common prefix
   // abc##suffix
   // abef###suffix
   // ^^
   if (*itrA != Item::PADDING_CHAR && *itrB != Item::PADDING_CHAR)
     return false;
 
-  // advancing pointers to move out of PADDING_CHAR
+  // Advancing pointers to move out of PADDING_CHAR
   itrA = advanceToNotSharp(itrA);
   itrB = advanceToNotSharp(itrB);
 
-  // now the rest should compare equal, otherwise we can't merge
+  // Now the rest should compare equal, otherwise we can't merge
   // prefix##suffix
   //         ^----^
   // prefix###suffix
@@ -448,19 +441,19 @@ bool merge(Item &itemA, Item &itemB) {
   if (std::mismatch(itrA, a.end(), itrB) != std::make_pair(a.end(), b.end()))
     return false;
 
-  // checking if some indices appear in both containers
+  // Checking if some indices appear in both containers
   VALUES allValues;
-  // appending all values
+  // Appending all values
   allValues.reserve(itemA.indices.size() + itemB.indices.size());
   allValues.insert(allValues.end(), itemA.indices.begin(), itemA.indices.end());
   allValues.insert(allValues.end(), itemB.indices.begin(), itemB.indices.end());
-  // sorting if needed
+  // Sorting if needed
   sortIfNeeded(allValues);
-  // we must not have twice the same value in there
+  // We must not have twice the same value in there
   if (std::adjacent_find(allValues.begin(), allValues.end()) != allValues.end())
     return false;
 
-  // need add check padding!!!
+  // Need add check padding!!!
   // if start & end has less numbers than padding
   // we can't merge it
   int paddingA = digits(itemA.indices[0]);
@@ -471,8 +464,7 @@ bool merge(Item &itemA, Item &itemB) {
   if (itemB.padding > 0 && itemB.padding != paddingB)
     return false;
 
-  // now the two patterns are compatible
-  // appending b indices to a
+  // Now the two patterns are compatible appending b indices to a
   itemA.indices = std::move(allValues);
 
   // If a's padding is already 0 we're done.
@@ -509,8 +501,7 @@ void bakeSingleton(Item &item) {
   }
 
   int padding = digits(item.start);
-  auto locations = getLocations(1, item.filename);
-
+  const auto locations = getLocations(1, item.filename);
   assert(locations.size() == 1);
   if (item.start != -1 && padding > locations[0].second - locations[0].first) {
     std::string prefix;
@@ -634,7 +625,7 @@ int retainFirstLocation(const PatternSet &set) {
   for (int i = lastIndex; i >= 0; --i)
     if (locations[i].first < dotPos)
       return i;
-  return lastIndex; /* might be a hidden file so taking the last*/
+  return lastIndex; // might be a hidden file so taking the last
 }
 
 typedef std::function<int(const PatternSet &)> SplitIndexFunction;
@@ -666,7 +657,7 @@ FolderContent parse(const Configuration &config,
   FolderContent result;
   Items &directories = result.directories;
   Items &files = result.files;
-  { /* ingest */
+  { // ingest
     FilesystemEntry entry;
     while (getNextEntry(entry)) {
       if (entry.isDirectory)

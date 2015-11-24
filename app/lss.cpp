@@ -101,23 +101,23 @@ inline static void printJson(const FolderContent &result) {
 } // namespace sequence
 
 static void printHelp() {
-  printf("USAGE [OPTIONS] [FOLDER]\n");
-  printf("--help,-h            Print help and exit\n");
-  printf("--merge-padding,-m   Merge sequence with different padding\n");
-  printf("--recursive,-r       Parse folder recursively\n");
-  printf("--pack,-p            Drop indices and replace with one or several "
-         "contiguous chunks\n");
-  printf("--bake-singleton,-b  Replace Items with only one index by it's "
-         "corresponding filename\n");
-  printf(
-      "--sort,-s            Print folder and files lexicographically sorted\n");
-  printf("--json,-j            Output result as a json object\n");
-  printf("--keep=              Strategy to handle ambiguous locations\n");
-  printf("       none          flattens the set\n");
-  printf("       first         keep first number\n");
-  printf("       last          keep last number\n");
-  printf("       max-variance  keep number with highest variance (default)\n");
-  printf("                     backups to 'none' if same variance\n");
+  puts(R"(USAGE [OPTIONS] [FOLDER]
+--help,-h            Print help and exit.
+--merge-padding,-m   Merge sequence with different padding.
+--recursive,-r       Parse folder recursively.
+--pack,-p            Drop indices and replace with one or several contiguous
+                     chunks.
+--bake-singleton,-b  Replace Items with only one index by it's corresponding
+                     filename.
+--sort,-s            Print folder and files lexicographically sorted.
+--json,-j            Output result as a json object.
+--keep=              Strategy to handle ambiguous locations.
+       none          flattens the set.
+       first         keep first number.
+       last          keep last number.
+       max-variance  keep number with highest variance (default). Backups to
+                     'none' if same variance.
+)");
 }
 
 #include <list>
