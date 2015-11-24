@@ -46,47 +46,52 @@ namespace sequence {
  *
  */
 enum SplitIndexStrategy {
-	RETAIN_NONE, RETAIN_LAST_LOCATION, RETAIN_HIGHEST_VARIANCE, RETAIN_FIRST_LOCATION
+  RETAIN_NONE,
+  RETAIN_LAST_LOCATION,
+  RETAIN_HIGHEST_VARIANCE,
+  RETAIN_FIRST_LOCATION
 };
 
 /**
  * A simple structure to setup the parser
  */
 struct Configuration {
-	SplitIndexStrategy getPivotIndex;
-	bool mergePadding;
-	bool pack;
-	bool bakeSingleton;
-	bool sort;
-	Configuration() :
-			getPivotIndex(RETAIN_HIGHEST_VARIANCE), mergePadding(false), pack(false), bakeSingleton(false), sort(false) {
-	}
+  SplitIndexStrategy getPivotIndex;
+  bool mergePadding;
+  bool pack;
+  bool bakeSingleton;
+  bool sort;
+  Configuration()
+      : getPivotIndex(RETAIN_HIGHEST_VARIANCE), mergePadding(false),
+        pack(false), bakeSingleton(false), sort(false) {}
 };
 
 /**
  * Structure returned by the parser
  */
 struct FolderContent {
-    STRING name; // parsed folder name
-    Items directories, files;
+  STRING name; // parsed folder name
+  Items directories, files;
 };
 
 /**
  * Standard function to parse a file system directory
  */
-FolderContent parseDir(const Configuration &configuration, const CHAR* foldername);
+FolderContent parseDir(const Configuration &configuration,
+                       const CHAR *foldername);
 
 /**
  * Special function to parse a custom representation.
  * Just pass in a GetNextEntryFunction function.
  */
 struct FilesystemEntry {
-	const CHAR* pFilename;
-	bool isDirectory;
+  const CHAR *pFilename;
+  bool isDirectory;
 };
-typedef std::function<bool(FilesystemEntry&)> GetNextEntryFunction;
+typedef std::function<bool(FilesystemEntry &)> GetNextEntryFunction;
 
-FolderContent parse(const Configuration &config, const GetNextEntryFunction &getNextEntry);
+FolderContent parse(const Configuration &config,
+                    const GetNextEntryFunction &getNextEntry);
 
 } /* namespace sequence */
 

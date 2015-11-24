@@ -22,36 +22,39 @@ typedef typename STRING::value_type CHAR;
  * - PACKED  : it's a contiguous sequence going from start to end
  */
 struct Item {
-	enum : CHAR {PADDING_CHAR = '#'};
-    enum Type { INVALID, SINGLE, INDICED, PACKED };
+  enum : CHAR { PADDING_CHAR = '#' };
+  enum Type { INVALID, SINGLE, INDICED, PACKED };
 
-    index_type start = -1, end = -1;
-    char padding = -1, step = -1;
-    STRING filename;
-    VALUES indices;
+  index_type start = -1, end = -1;
+  char padding = -1, step = -1;
+  STRING filename;
+  VALUES indices;
 
-    Item() = default;
-    Item(const Item& other) = default;
-    Item(Item&& other) = default;
-    Item(const STRING& filename) : filename(filename) { }
-    Item(STRING&& filename) : filename(std::move(filename)) { }
-    Item(STRING&& filename, VALUES&& values) : filename(std::move(filename)), indices(std::move(values)) { }
-    Item& operator=(Item&& other) = default;
-    Item& operator=(const Item& other) = default;
+  Item() = default;
+  Item(const Item &other) = default;
+  Item(Item &&other) = default;
+  Item(const STRING &filename) : filename(filename) {}
+  Item(STRING &&filename) : filename(std::move(filename)) {}
+  Item(STRING &&filename, VALUES &&values)
+      : filename(std::move(filename)), indices(std::move(values)) {}
+  Item &operator=(Item &&other) = default;
+  Item &operator=(const Item &other) = default;
 
-    Type getType() const {
-        if (filename.empty()) return INVALID;
-        if (!indices.empty()) return INDICED;
-        if (step == -1) return SINGLE;
-        return PACKED;
-    }
+  Type getType() const {
+    if (filename.empty())
+      return INVALID;
+    if (!indices.empty())
+      return INDICED;
+    if (step == -1)
+      return SINGLE;
+    return PACKED;
+  }
 };
 
 /**
  * For convenience, Items is defined to be a vector of Item
  */
 typedef std::vector<Item> Items;
-
 }
 
 #endif /* ITEM_HPP_ */

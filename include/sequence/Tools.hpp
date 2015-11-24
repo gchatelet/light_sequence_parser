@@ -25,7 +25,9 @@ Item createSingleFile(std::string filename);
  *                |
  *             padding
  */
-Item createSequence(std::string prefix, std::string suffix, index_type start, index_type end, unsigned char padding = 0, unsigned char step = 1);
+Item createSequence(std::string prefix, std::string suffix, index_type start,
+                    index_type end, unsigned char padding = 0,
+                    unsigned char step = 1);
 
 /**
  * Produces a matcher from a pattern string.
@@ -36,7 +38,7 @@ Item createSequence(std::string prefix, std::string suffix, index_type start, in
  * throws std::invalid_argument if string is empty or does not contain a
  * padding character ('#' or '@').
  */
-std::regex getMatcher(const std::string& pattern, bool ignoreCase = false);
+std::regex getMatcher(const std::string &pattern, bool ignoreCase = false);
 
 /**
  * Tests if a particular Item matches a pattern.
@@ -54,9 +56,10 @@ std::regex getMatcher(const std::string& pattern, bool ignoreCase = false);
  * auto predicate = [&](const Item& item) -> bool {
  *   return !match(matcher, item);
  * };
- * items.erase(std::remove_if(items.begin(), items.end(), predicate), items.end());
+ * items.erase(std::remove_if(items.begin(), items.end(), predicate),
+ *items.end());
  */
-bool match(const std::regex& matcher, const Item& candidate);
+bool match(const std::regex &matcher, const Item &candidate);
 
 /**
  * @brief getPrefixAndSuffix - get prefix and suffix from filename
@@ -64,9 +67,9 @@ bool match(const std::regex& matcher, const Item& candidate);
  * @param prefix - out prexix
  * @param suffix - out suffix
  */
-void getPrefixAndSuffix(const std::string &filename, std::string &prefix, std::string &suffix);
+void getPrefixAndSuffix(const std::string &filename, std::string &prefix,
+                        std::string &suffix);
 
-
-}  // namespace sequence
+} // namespace sequence
 
 #endif /* TOOLS_HPP_ */

@@ -6,16 +6,16 @@
 
 struct Lister {
 private:
-  const char * const pDirectory;
+  const char *const pDirectory;
   DIR *pDir;
   struct dirent *direntry;
   std::string symlink_buffer;
-public:
-  Lister(const char* pFilename) :
-      pDirectory(pFilename), pDir(opendir(pFilename)), direntry(nullptr) {
-  }
 
-  int resolveLinkMode(const struct dirent * const direntry) {
+public:
+  Lister(const char *pFilename)
+      : pDirectory(pFilename), pDir(opendir(pFilename)), direntry(nullptr) {}
+
+  int resolveLinkMode(const struct dirent *const direntry) {
     symlink_buffer.clear();
     symlink_buffer += pDirectory;
     symlink_buffer += '/';
@@ -30,17 +30,19 @@ public:
     return DT_UNKNOWN;
   }
 
-  std::function<bool(sequence::FilesystemEntry&)> operator()() {
+  std::function<bool(sequence::FilesystemEntry &)> operator()() {
     return [&](sequence::FilesystemEntry &entry) -> bool {
-      if(!pDir) {
+      if (!pDir) {
         return false;
       }
-      for(;;) {
+      for (;;) {
         direntry = readdir(pDir);
-        if(!direntry) {
+        if (!direntry) {
           return false;
         }
-        const int st_mode = direntry->d_type == DT_LNK ? resolveLinkMode(direntry): direntry->d_type;
+        const int st_mode = direntry->d_type == DT_LNK
+                                ? resolveLinkMode(direntry)
+                                : direntry->d_type;
         if (st_mode == DT_DIR) {
           entry.isDirectory = true;
         } else if (st_mode == DT_REG) {
