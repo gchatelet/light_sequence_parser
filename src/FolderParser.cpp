@@ -501,7 +501,7 @@ void bakeSingleton(Item &item) {
   }
 
   int padding = digits(item.start);
-  const auto locations = getLocations(1, item.filename);
+  auto locations = getLocations(1, item.filename);
   assert(locations.size() == 1);
   if (item.start != -1 && padding > locations[0].second - locations[0].first) {
     std::string prefix;

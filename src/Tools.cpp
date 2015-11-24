@@ -77,7 +77,7 @@ bool match(const std::regex &matcher, const Item &candidate) {
 }
 
 void getPrefixAndSuffix(const std::string &filename, std::string &prefix,
-                        std::__cxx11::string &suffix) {
+                        std::string &suffix) {
   const auto begin = filename.begin();
   auto firstSharpIndex = filename.find('#');
   prefix = std::string(begin, begin + firstSharpIndex);
