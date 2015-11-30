@@ -1,5 +1,6 @@
 #include <sequence/Tools.hpp>
 
+#include <assert.h>
 #include <algorithm>
 
 namespace sequence {
@@ -80,6 +81,7 @@ void getPrefixAndSuffix(const std::string &filename, std::string &prefix,
                         std::string &suffix) {
   const auto begin = filename.begin();
   auto firstSharpIndex = filename.find('#');
+  assert(firstSharpIndex != std::string::npos);
   prefix = std::string(begin, begin + firstSharpIndex);
   auto lastSharpIndex = filename.rfind('#');
   suffix = std::string(begin + lastSharpIndex + 1, filename.end());

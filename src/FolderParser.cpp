@@ -453,7 +453,6 @@ bool merge(Item &itemA, Item &itemB) {
   if (std::adjacent_find(allValues.begin(), allValues.end()) != allValues.end())
     return false;
 
-  // Need add check padding!!!
   // if start & end has less numbers than padding
   // we can't merge it
   int paddingA = digits(itemA.indices[0]);

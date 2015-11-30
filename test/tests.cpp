@@ -659,13 +659,11 @@ namespace std {
 
 ostream &operator<<(ostream &s, const sequence::VALUES &values) {
   s << "[";
-  auto i = values.begin();
-  if (i != values.end()) {
-    s << *i;
-    ++i;
-    for (; i != values.end(); ++i) {
-      s << ", " << *i;
-    }
+  bool first = true;
+  for(const auto& value : values) {
+    if(!first) s << ", ";
+    s << value;
+    first = false;
   }
   s << "]";
   return s;
@@ -692,13 +690,11 @@ ostream &operator<<(ostream &s, const sequence::Item &item) {
 
 ostream &operator<<(ostream &s, const sequence::Items &items) {
   s << "[";
-  auto i = items.begin();
-  if (i != items.end()) {
-    s << *i;
-    ++i;
-    for (; i != items.end(); ++i) {
-      s << ", " << *i;
-    }
+  bool first = true;
+  for(const auto& item : items) {
+    if(!first) s << ", ";
+    s << item;
+    first = false;
   }
   s << "]";
   return s;
@@ -713,71 +709,44 @@ ostream &operator<<(ostream &s, const sequence::FolderContent &c) {
 namespace additionalTests {
 struct Lister {
 private:
-  vector<string> m_files;
-  bool m_noMoreFile;
-  int m_fileIndex;
-
+  deque<string> m_files;
+  vector<string> m_tmp_files;//use it for save string, pFilename - only pointer
 public:
-  Lister(const vector<string> &files) : m_files(files), m_fileIndex(0) {
-    m_noMoreFile = m_files.empty();
+  Lister(const deque<string> &files) : m_files(files){
   }
 
   function<bool(sequence::FilesystemEntry &)> operator()() {
     return [&](sequence::FilesystemEntry &entry) -> bool {
-      if (m_noMoreFile)
+      if (m_files.empty())
         return false;
       entry.isDirectory = false;
-      entry.pFilename = m_files[m_fileIndex].c_str();
-      // find index
-      ++m_fileIndex;
-      if (m_fileIndex >= m_files.size())
-        m_noMoreFile = true;
+      m_tmp_files.push_back(m_files.front());
+      entry.pFilename = m_tmp_files.back().c_str();
+      m_files.pop_front();
       return true;
     };
   }
-
-  ~Lister() {}
 };
 
-/**
- * @brief The SequenceUtilsTester class is a basic test fixture
- */
-class SequenceParserTest : public testing::Test {
-public:
-  SequenceParserTest() {}
 
-  // virtual void SetUp() will be called before each test is run.  You
-  // should define it if you need to initialize the varaibles.
-  // Otherwise, this can be skipped.
-  virtual void SetUp() {}
-
-  // virtual void TearDown() will be called after each test is run.
-  // You should define it if there is cleanup work to do.  Otherwise,
-  // you don't have to provide it.
-  //
-  virtual void TearDown() {}
-
-  static sequence::Configuration getParserConf(bool useSequences) {
+static sequence::Configuration getParserConf() {
     using namespace sequence;
     Configuration conf;
-    if (useSequences)
-      conf.getPivotIndex = RETAIN_HIGHEST_VARIANCE;
-    else
-      conf.getPivotIndex = RETAIN_NONE;
+    conf.getPivotIndex = RETAIN_HIGHEST_VARIANCE;
     conf.sort = false;
-    conf.bakeSingleton = useSequences;
-    conf.mergePadding = useSequences;
-    conf.pack = useSequences;
+    conf.bakeSingleton = true;
+    conf.mergePadding = true;
+    conf.pack = true;
     return conf;
-  }
-};
+}
+
 
 /*
   Tests for sequence parser
 */
 
 namespace {
-template <typename T> T limit_max(const T &) {
+template <typename T> __inline T limit_max(const T &) {
   return numeric_limits<T>::max();
 }
 
@@ -792,7 +761,7 @@ Item createIndices(const std::string &prefix, const std::string &postfix,
 }
 }
 
-TEST_F(SequenceParserTest, merge) {
+TEST(Correctness, merge) {
   Item item0 = createIndices("file", ".ext", 0, 9, 2);
   Item item1 = createIndices("file", ".ext", 0, 9, 1);
   ASSERT_EQ(false, sequence::details::merge(item0, item1));
@@ -802,12 +771,12 @@ TEST_F(SequenceParserTest, merge) {
   ASSERT_EQ(true, sequence::details::merge(item1, item3));
 }
 
-TEST_F(SequenceParserTest, singleIndex) {
-  vector<string> files;
+TEST(Correctness, singleIndex) {
+  deque<string> files;
   files.push_back("file1.ext");
 
   Lister lister(files);
-  auto content = sequence::parse(getParserConf(true), lister());
+  auto content = sequence::parse(getParserConf(), lister());
 
   ASSERT_EQ(1, content.files.size());
   const auto &item = content.files.front();
@@ -815,13 +784,13 @@ TEST_F(SequenceParserTest, singleIndex) {
   ASSERT_EQ(files.front(), item.filename);
 }
 
-TEST_F(SequenceParserTest, bigStep) {
-  vector<string> files;
+TEST(Correctness, bigStep) {
+  deque<string> files;
   files.push_back("sintel_trailer_2k_0368.png");
   files.push_back("sintel_trailer_2k_1071.png");
 
   Lister lister(files);
-  auto content = sequence::parse(getParserConf(true), lister());
+  auto content = sequence::parse(getParserConf(), lister());
 
   auto expectedStep = 1071 - 368;
   const auto &item1 = content.files.front();
@@ -846,63 +815,58 @@ TEST_F(SequenceParserTest, bigStep) {
   }
 }
 
-TEST_F(SequenceParserTest, test8_10_16) {
-  vector<int> indeces{8, 10, 16};
+TEST(Correctness, test8_10_16) {
+  const vector<int> indices{8, 10, 16};
 
-  vector<string> files;
-  for (const auto &i : indeces) {
-    stringstream stream;
-    stream << "file" << i << ".ext";
-    files.push_back(stream.str());
+  deque<string> files;
+  for (const auto &i : indices) {
+    char buffer[128];
+    snprintf(buffer, sizeof(buffer), "file%d.ext", i);
+    files.push_back(buffer);
   }
 
   Lister lister(files);
   ASSERT_PRED1([&](sequence::FolderContent content) -> bool {
-    if (content.files.size() == indeces.size()) {
+    if (content.files.size() == indices.size()) {
       // single file items acceptible
       return std::all_of(content.files.begin(), content.files.end(),
                          [](const sequence::Item &item) -> bool {
                            return item.getType() ==
                                   sequence::Item::Type::SINGLE;
                          });
-    } else if (content.files.size() == indeces.size() - 1) {
+    } else if (content.files.size() == indices.size() - 1) {
       // any pair is acceptible
       if (content.files[0].getType() == sequence::Item::Type::PACKED) {
         const auto &indexed = content.files[0];
         const auto &single = content.files[1];
 
-        if (indexed.start == indeces[0] && indexed.end == indeces[2]) {
+        if (indexed.start == indices[0] && indexed.end == indices[2]) {
           return single.filename == files[1] &&
-                 (indeces[2] - indeces[0]) == indexed.step;
-        } else if (indexed.start == indeces[1] && indexed.end == indeces[2]) {
+                 (indices[2] - indices[0]) == indexed.step;
+        } else if (indexed.start == indices[1] && indexed.end == indices[2]) {
           return single.filename == files[0] &&
-                 (indeces[2] - indeces[1]) == indexed.step;
-        } else if (indexed.start == indeces[0] && indexed.end == indeces[1]) {
+                 (indices[2] - indices[1]) == indexed.step;
+        } else if (indexed.start == indices[0] && indexed.end == indices[1]) {
           return single.filename == files[2] &&
-                 (indeces[1] - indeces[0]) == indexed.step;
+                 (indices[1] - indices[0]) == indexed.step;
         }
       }
     }
     return false;
-  }, sequence::parse(getParserConf(true), lister()));
+  }, sequence::parse(getParserConf(), lister()));
 }
 
-TEST_F(SequenceParserTest, disconnectedSequence) {
-  vector<int> indeces{2, 3, 4, 10, 11, 12};
-  const auto width = 2;
-  vector<string> files;
-  for (const auto &i : indeces) {
-    stringstream stream;
-    stream << "file";
-    stream.width(width);
-    stream.fill('0');
-    stream << right << i;
-    stream << ".ext";
-    files.push_back(stream.str());
+TEST(Correctness, disconnectedSequence) {
+  const vector<int> indices{2, 3, 4, 10, 11, 12};
+  deque<string> files;
+  for (const auto &i : indices) {
+    char buffer[128];
+    snprintf(buffer, sizeof(buffer), "file%02d.ext", i);
+    files.push_back(buffer);
   }
 
   Lister lister(files);
-  auto content = sequence::parse(getParserConf(true), lister());
+  auto content = sequence::parse(getParserConf(), lister());
   ASSERT_EQ(2, content.files.size());
 
   ASSERT_EQ(2, content.files[0].start);
@@ -919,22 +883,17 @@ TEST_F(SequenceParserTest, disconnectedSequence) {
   ASSERT_EQ(sequence::Item::Type::PACKED, content.files[1].getType());
 }
 
-TEST_F(SequenceParserTest, disconnectedSequence2) {
-  vector<int> indeces{2, 3, 4, 100, 101, 102};
-  const auto width = 2;
-  vector<string> files;
-  for (const auto &i : indeces) {
-    stringstream stream;
-    stream << "file";
-    stream.width(width);
-    stream.fill('0');
-    stream << right << i;
-    stream << ".ext";
-    files.push_back(stream.str());
+TEST(Correctness, disconnectedSequence2) {
+  const vector<int> indices{2, 3, 4, 100, 101, 102};
+  deque<string> files;
+  for (const auto &i : indices) {
+    char buffer[128];
+    snprintf(buffer, sizeof(buffer), "file%02d.ext", i);
+    files.push_back(buffer);
   }
 
   Lister lister(files);
-  auto content = sequence::parse(getParserConf(true), lister());
+  auto content = sequence::parse(getParserConf(), lister());
   ASSERT_EQ(2, content.files.size());
 
   ASSERT_EQ(2, content.files[0].start);
