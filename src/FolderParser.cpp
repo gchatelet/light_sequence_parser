@@ -24,7 +24,7 @@ namespace {
 typedef typename STRING::iterator STRING_ITR;
 typedef typename STRING::const_iterator STRING_CITR;
 
-template <typename T> T limit_max(const T &) {
+template <typename T> inline T limit_max(const T &) {
   return std::numeric_limits<T>::max();
 }
 

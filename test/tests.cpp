@@ -746,7 +746,7 @@ static sequence::Configuration getParserConf() {
 */
 
 namespace {
-template <typename T> __inline T limit_max(const T &) {
+template <typename T> inline T limit_max(const T &) {
   return numeric_limits<T>::max();
 }
 
@@ -878,8 +878,7 @@ TEST(Correctness, disconnectedSequence) {
   ASSERT_EQ(10, content.files[1].start);
   ASSERT_EQ(12, content.files[1].end);
   ASSERT_EQ(1, content.files[1].step);
-  ASSERT_PRED1([](int i) -> bool { return i == 0 || i == 2; },
-               content.files[1].padding);
+  ASSERT_TRUE(content.files[1].padding == 0 || content.files[1].padding == 2);
   ASSERT_EQ(sequence::Item::Type::PACKED, content.files[1].getType());
 }
 
@@ -905,8 +904,7 @@ TEST(Correctness, disconnectedSequence2) {
   ASSERT_EQ(100, content.files[1].start);
   ASSERT_EQ(102, content.files[1].end);
   ASSERT_EQ(1, content.files[1].step);
-  ASSERT_PRED1([](int i) -> bool { return i == 0 || i == 3; },
-               content.files[1].padding);
+  ASSERT_TRUE(content.files[1].padding == 0 || content.files[1].padding == 3);
   ASSERT_EQ(sequence::Item::Type::PACKED, content.files[1].getType());
 }
-}
+} // additionalTests
