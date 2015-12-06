@@ -17,8 +17,8 @@ Features
  - you can parse in memory filenames 
 
 
-Compilation
------------
+Build
+-----
 
 You will need a C++11 compliant compiler to compile this code.
 
@@ -28,6 +28,11 @@ Will build a static library `libsequenceparser.a` and a small executable `lss` t
 
 If you have GoogleTest installed on you system you can check the code by running
 > make tests
+
+Contribute
+----------
+
+Pull requests are welcome. They should be small, with a clear target: fixing a bug, the documentation or adding tests. Code should be formatted with clang-format 3.7 if possible.
 
 License
 -------
@@ -41,8 +46,3 @@ Tested compilers
 * Clang 3.1 on Gentoo
 * GCC 4.6.3 on Gentoo
 * GCC 4.7.2 on Gentoo
-
-Authors
--------
-
-- [Guillaume Chatelet](mailto:chatelet.guillaume@gmail.com)
