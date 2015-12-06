@@ -36,6 +36,7 @@ struct Item {
   Item(STRING &&filename, VALUES &&values)
       : filename(std::move(filename)), indices(std::move(values)) {}
   Item &operator=(Item &&other) = default;
+  Item &operator=(const Item &other) = default;
 
   Type getType() const {
     if (filename.empty())
