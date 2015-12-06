@@ -1,10 +1,13 @@
+#include <gtest/gtest.h>
+
 #define GTEST
 #include "../src/FolderParser.cpp"
 #include "../src/Tools.cpp"
+#undef GTEST
+
+using sequence::Item;
 
 using namespace std;
-
-#include <gtest/gtest.h>
 
 namespace sequence {
 
@@ -651,3 +654,257 @@ TEST(Correctness, merge2) {
 } // namespace details
 
 } // namespace sequence
+
+namespace std {
+
+ostream &operator<<(ostream &s, const sequence::VALUES &values) {
+  s << "[";
+  bool first = true;
+  for(const auto& value : values) {
+    if(!first) s << ", ";
+    s << value;
+    first = false;
+  }
+  s << "]";
+  return s;
+}
+
+ostream &operator<<(ostream &s, const sequence::Item &item) {
+  switch (item.getType()) {
+  case sequence::Item::INVALID:
+    s << "invalid";
+    break;
+  case sequence::Item::SINGLE:
+    s << item.filename;
+    break;
+  case sequence::Item::INDICED:
+    s << item.filename << " (" << item.indices << ")";
+    break;
+  case sequence::Item::PACKED:
+    s << item.filename << " (" << item.start << "-" << item.end << "+"
+      << int(item.step) << ")";
+    break;
+  }
+  return s;
+}
+
+ostream &operator<<(ostream &s, const sequence::Items &items) {
+  s << "[";
+  bool first = true;
+  for(const auto& item : items) {
+    if(!first) s << ", ";
+    s << item;
+    first = false;
+  }
+  s << "]";
+  return s;
+}
+
+ostream &operator<<(ostream &s, const sequence::FolderContent &c) {
+  return s << "files: " << c.files << ", directories: " << c.directories
+           << ", name: " << c.name;
+}
+}
+
+namespace additionalTests {
+struct Lister {
+private:
+  deque<string> m_files;
+  vector<string> m_tmp_files;//use it for save string, pFilename - only pointer
+public:
+  Lister(const deque<string> &files) : m_files(files){
+  }
+
+  function<bool(sequence::FilesystemEntry &)> operator()() {
+    return [&](sequence::FilesystemEntry &entry) -> bool {
+      if (m_files.empty())
+        return false;
+      entry.isDirectory = false;
+      m_tmp_files.push_back(m_files.front());
+      entry.pFilename = m_tmp_files.back().c_str();
+      m_files.pop_front();
+      return true;
+    };
+  }
+};
+
+
+static sequence::Configuration getParserConf() {
+    using namespace sequence;
+    Configuration conf;
+    conf.getPivotIndex = RETAIN_HIGHEST_VARIANCE;
+    conf.sort = false;
+    conf.bakeSingleton = true;
+    conf.mergePadding = true;
+    conf.pack = true;
+    return conf;
+}
+
+
+/*
+  Tests for sequence parser
+*/
+
+namespace {
+template <typename T> inline T limit_max(const T &) {
+  return numeric_limits<T>::max();
+}
+
+Item createIndices(const std::string &prefix, const std::string &postfix,
+                   int start, int end, int padding) {
+  Item item = sequence::createSequence(prefix, postfix, start, end, padding);
+  while (start <= end) {
+    item.indices.push_back(start);
+    ++start;
+  }
+  return item;
+}
+}
+
+TEST(Correctness, merge) {
+  Item item0 = createIndices("file", ".ext", 0, 9, 2);
+  Item item1 = createIndices("file", ".ext", 0, 9, 1);
+  ASSERT_EQ(false, sequence::details::merge(item0, item1));
+  Item item2 = createIndices("file", ".ext", 10, 99, 2);
+  Item item3 = createIndices("file", ".ext", 101, 999, 3);
+  ASSERT_EQ(true, sequence::details::merge(item1, item2));
+  ASSERT_EQ(true, sequence::details::merge(item1, item3));
+}
+
+TEST(Correctness, singleIndex) {
+  deque<string> files;
+  files.push_back("file1.ext");
+
+  Lister lister(files);
+  auto content = sequence::parse(getParserConf(), lister());
+
+  ASSERT_EQ(1, content.files.size());
+  const auto &item = content.files.front();
+  ASSERT_EQ(sequence::Item::Type::SINGLE, item.getType());
+  ASSERT_EQ(files.front(), item.filename);
+}
+
+TEST(Correctness, bigStep) {
+  deque<string> files;
+  files.push_back("sintel_trailer_2k_0368.png");
+  files.push_back("sintel_trailer_2k_1071.png");
+
+  Lister lister(files);
+  auto content = sequence::parse(getParserConf(), lister());
+
+  auto expectedStep = 1071 - 368;
+  const auto &item1 = content.files.front();
+  ASSERT_GE(content.files.size(), 1);
+
+  if (expectedStep > limit_max(item1.step)) {
+    // if step field can't hold size it should be two items
+
+    ASSERT_EQ(2, content.files.size());
+    ASSERT_EQ(sequence::Item::Type::SINGLE, item1.getType());
+    ASSERT_EQ(files[0], item1.filename);
+
+    const auto &item2 = content.files[1];
+    ASSERT_EQ(sequence::Item::Type::SINGLE, item2.getType());
+    ASSERT_EQ(files[1], item2.filename);
+  } else {
+    ASSERT_EQ(1, content.files.size());
+    ASSERT_EQ(sequence::Item::Type::PACKED, item1.getType());
+    ASSERT_EQ(368, item1.start);
+    ASSERT_EQ(1071, item1.end);
+    ASSERT_EQ(expectedStep, item1.step);
+  }
+}
+
+TEST(Correctness, test8_10_16) {
+  const vector<int> indices{8, 10, 16};
+
+  deque<string> files;
+  for (const auto &i : indices) {
+    char buffer[128];
+    snprintf(buffer, sizeof(buffer), "file%d.ext", i);
+    files.push_back(buffer);
+  }
+
+  Lister lister(files);
+  ASSERT_PRED1([&](sequence::FolderContent content) -> bool {
+    if (content.files.size() == indices.size()) {
+      // single file items acceptible
+      return std::all_of(content.files.begin(), content.files.end(),
+                         [](const sequence::Item &item) -> bool {
+                           return item.getType() ==
+                                  sequence::Item::Type::SINGLE;
+                         });
+    } else if (content.files.size() == indices.size() - 1) {
+      // any pair is acceptible
+      if (content.files[0].getType() == sequence::Item::Type::PACKED) {
+        const auto &indexed = content.files[0];
+        const auto &single = content.files[1];
+
+        if (indexed.start == indices[0] && indexed.end == indices[2]) {
+          return single.filename == files[1] &&
+                 (indices[2] - indices[0]) == indexed.step;
+        } else if (indexed.start == indices[1] && indexed.end == indices[2]) {
+          return single.filename == files[0] &&
+                 (indices[2] - indices[1]) == indexed.step;
+        } else if (indexed.start == indices[0] && indexed.end == indices[1]) {
+          return single.filename == files[2] &&
+                 (indices[1] - indices[0]) == indexed.step;
+        }
+      }
+    }
+    return false;
+  }, sequence::parse(getParserConf(), lister()));
+}
+
+TEST(Correctness, disconnectedSequence) {
+  const vector<int> indices{2, 3, 4, 10, 11, 12};
+  deque<string> files;
+  for (const auto &i : indices) {
+    char buffer[128];
+    snprintf(buffer, sizeof(buffer), "file%02d.ext", i);
+    files.push_back(buffer);
+  }
+
+  Lister lister(files);
+  auto content = sequence::parse(getParserConf(), lister());
+  ASSERT_EQ(2, content.files.size());
+
+  ASSERT_EQ(2, content.files[0].start);
+  ASSERT_EQ(4, content.files[0].end);
+  ASSERT_EQ(1, content.files[0].step);
+  ASSERT_EQ(2, content.files[0].padding);
+  ASSERT_EQ(sequence::Item::Type::PACKED, content.files[0].getType());
+
+  ASSERT_EQ(10, content.files[1].start);
+  ASSERT_EQ(12, content.files[1].end);
+  ASSERT_EQ(1, content.files[1].step);
+  ASSERT_TRUE(content.files[1].padding == 0 || content.files[1].padding == 2);
+  ASSERT_EQ(sequence::Item::Type::PACKED, content.files[1].getType());
+}
+
+TEST(Correctness, disconnectedSequence2) {
+  const vector<int> indices{2, 3, 4, 100, 101, 102};
+  deque<string> files;
+  for (const auto &i : indices) {
+    char buffer[128];
+    snprintf(buffer, sizeof(buffer), "file%02d.ext", i);
+    files.push_back(buffer);
+  }
+
+  Lister lister(files);
+  auto content = sequence::parse(getParserConf(), lister());
+  ASSERT_EQ(2, content.files.size());
+
+  ASSERT_EQ(2, content.files[0].start);
+  ASSERT_EQ(4, content.files[0].end);
+  ASSERT_EQ(1, content.files[0].step);
+  ASSERT_EQ(2, content.files[0].padding);
+  ASSERT_EQ(sequence::Item::Type::PACKED, content.files[0].getType());
+
+  ASSERT_EQ(100, content.files[1].start);
+  ASSERT_EQ(102, content.files[1].end);
+  ASSERT_EQ(1, content.files[1].step);
+  ASSERT_TRUE(content.files[1].padding == 0 || content.files[1].padding == 3);
+  ASSERT_EQ(sequence::Item::Type::PACKED, content.files[1].getType());
+}
+} // additionalTests
