@@ -8,11 +8,12 @@
 #include <string>
 
 #include <sequence/Parser.hpp>
+#include <sequence/ItemIO.hpp>
 #include <sequence/details/StringUtils.hpp>
 
 namespace sequence {
 
-inline static void printRegular(const Item &item) {
+void printRegular(const Item &item) {
   const auto pFilename = item.filename.c_str();
   switch (item.getType()) {
   case Item::SINGLE:
@@ -33,7 +34,7 @@ inline static void printRegular(const Item &item) {
   }
 }
 
-inline static void printRegular(const FolderContent &result) {
+void printRegular(const FolderContent &result) {
   printf("\n\n* %s\n", result.name.c_str());
   for (const Item &item : result.directories)
     printRegular(item);
@@ -42,22 +43,7 @@ inline static void printRegular(const FolderContent &result) {
     printRegular(item);
 }
 
-inline static const char *getTypeString(Item::Type type) {
-  switch (type) {
-  case Item::INVALID:
-    return "invalid";
-  case Item::SINGLE:
-    return "single";
-  case Item::INDICED:
-    return "indiced";
-  case Item::PACKED:
-    return "packed";
-  }
-  assert(false);
-  return "error";
-}
-
-inline static std::string toJson(const Item &item) {
+std::string toJson(const Item &item) {
   json::JsonObjectStreamWriter writer;
   const auto type = item.getType();
   writer << std::make_pair("type", getTypeString(type));
@@ -85,7 +71,7 @@ inline static std::string toJson(const Item &item) {
   return writer.build();
 }
 
-inline static void printJson(const FolderContent &result) {
+void printJson(const FolderContent &result) {
   json::JsonObjectStreamWriter writer;
   writer << std::make_pair("path", result.name.c_str());
   { // directories
