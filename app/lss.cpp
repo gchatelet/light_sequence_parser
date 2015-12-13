@@ -22,15 +22,13 @@ inline static void printRegular(const Item &item) {
     printf("Invalid\n");
     break;
   case Item::INDICED:
-    printf("%s (%lu) %d\n", pFilename, (unsigned long)item.indices.size(),
-           item.padding);
+    printf("%s (%zu)\n", pFilename, item.indices.size());
     break;
   case Item::PACKED:
     if (item.step == 1)
-      printf("%s [%d:%d] #%d\n", pFilename, item.start, item.end, item.padding);
+      printf("%s [%d:%d]\n", pFilename, item.start, item.end);
     else
-      printf("%s [%d:%d]/%d #%d\n", pFilename, item.start, item.end, item.step,
-             item.padding);
+      printf("%s [%d:%d]/%d\n", pFilename, item.start, item.end, item.step);
     break;
   }
 }
