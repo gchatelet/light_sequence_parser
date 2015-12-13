@@ -21,3 +21,6 @@
 lss
 lss.exe
 all_tests
+
+# Build directory
+build/

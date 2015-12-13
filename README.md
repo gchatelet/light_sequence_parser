@@ -1,4 +1,4 @@
-light sequence parser
+light sequence parser [![Build Status](https://travis-ci.org/gchatelet/light_sequence_parser.svg?branch=cleaner_version)](https://travis-ci.org/gchatelet/light_sequence_parser)
 =====================
 
 **light sequence parser** is a lightweight opensource library to parse folders and group sequences of files.
@@ -6,6 +6,8 @@ light sequence parser
 It is designed for the **VFX industry** that needs to work on file sequences rather than movie files.
 
 * ex : file001.jpg, file002.jpg, file003.jpg is a sequence of 3 files.
+
+
 
 Features
 --------
@@ -17,8 +19,8 @@ Features
  - you can parse in memory filenames 
 
 
-Build
------
+Compilation
+-----------
 
 You will need a C++11 compliant compiler to compile this code.
 
@@ -29,11 +31,6 @@ Will build a static library `libsequenceparser.a` and a small executable `lss` t
 If you have GoogleTest installed on you system you can check the code by running
 > make tests
 
-Contribute
-----------
-
-Pull requests are welcome. They should be small, with a clear target: fixing a bug, the documentation or adding tests. Code should be formatted with clang-format 3.7 if possible.
-
 License
 -------
 
@@ -43,6 +40,14 @@ See LICENCE.txt
 Tested compilers
 ----------------
 
-* Clang 3.1 on Gentoo
-* GCC 4.6.3 on Gentoo
-* GCC 4.7.2 on Gentoo
+* Ubuntu Trusty
+  * clang 3.5.0
+  * gcc 4.8.4
+* ArchLinux
+  * clang 3.7.0-5
+  * gcc 5.2.0-2
+
+Authors
+-------
+
+- [Guillaume Chatelet](mailto:chatelet.guillaume@gmail.com)

@@ -1,8 +1,9 @@
 #ifndef SEQUENCEPARSERTRIE_HPP_
 #define SEQUENCEPARSERTRIE_HPP_
 
-#include <sequence/Item.hpp>
 #include <functional>
+
+#include <sequence/Item.hpp>
 
 namespace sequence {
 
@@ -50,38 +51,35 @@ enum SplitIndexStrategy {
 
 // A simple structure to setup the parser
 struct Configuration {
-  SplitIndexStrategy getPivotIndex;
-  bool mergePadding;
-  bool pack;
-  bool bakeSingleton;
-  bool sort;
-  Configuration()
-      : getPivotIndex(RETAIN_HIGHEST_VARIANCE), mergePadding(false),
-        pack(false), bakeSingleton(false), sort(false) {}
+  SplitIndexStrategy getPivotIndex = RETAIN_HIGHEST_VARIANCE;
+  bool mergePadding = false;
+  bool pack = false;
+  bool bakeSingleton = false;
+  bool sort = false;
 };
 
 // Structure returned by the parser
 struct FolderContent {
-  STRING name; // parsed folder name
+  std::string name; // parsed folder name
   Items directories, files;
 };
 
 // Standard function to parse a file system directory
 FolderContent parseDir(const Configuration &configuration,
-                       const CHAR *foldername);
+                       CStringView foldername);
 
-// // Special function to parse a custom representation.
+// Special function to parse a custom representation.
 // Just pass in a GetNextEntryFunction function.
 struct FilesystemEntry {
-  const CHAR *pFilename;
+  StringView filename;
   bool isDirectory;
 };
 
 typedef std::function<bool(FilesystemEntry &)> GetNextEntryFunction;
 
 FolderContent parse(const Configuration &config,
-                    const GetNextEntryFunction &getNextEntry);
+                    GetNextEntryFunction getNextEntry);
 
-} /* namespace sequence */
+} // namespace sequence
 
 #endif /* SEQUENCEPARSERTRIE_HPP_ */

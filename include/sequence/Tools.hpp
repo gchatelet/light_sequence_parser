@@ -2,15 +2,39 @@
 #define TOOLS_HPP_
 
 #include <sequence/Item.hpp>
+#include <sequence/details/StringView.hpp>
 
 #include <regex>
+#include <string>
 
 namespace sequence {
+
+// Create a pattern composed from prefix, suffix and padding count.
+// If padding is 0, a single # is output.
+// If padding is more than MAX_PADDING, a domain_error is thrown.
+//
+// eg: "filename-###.png"
+//      ----^---- ^ --^-
+//       prefix   | suffix
+//                |
+//             padding
+std::string createPattern(CStringView prefix, CStringView suffix,
+                          unsigned char padding = 1);
+
+// Extracts prefix and suffix from pattern.
+// If pattern is malformed (contains no padding character or contains more than
+// one sequence of padding) an invalid_argument is thrown.
+std::pair<CStringView, CStringView> getPrefixAndSuffix(CStringView pattern);
+
+// Returns the number of padding characters between 1 and MAX_PADDING.
+// If pattern is malformed (contains no padding character or contains more than
+// one sequence of padding) an invalid_argument is thrown.
+unsigned getPadding(CStringView pattern);
 
 // Create an Item representing a single file.
 // Returns an invalid Item if filename contains a padding character ('#' or
 // '@').
-Item createSingleFile(std::string filename);
+Item createSingleFile(CStringView filename);
 
 // Create an Item representing a packed sequence.
 // Returns an invalid Item if prefix or suffix contains a padding character
@@ -21,9 +45,10 @@ Item createSingleFile(std::string filename);
 //       prefix   | suffix
 //                |
 //             padding
-Item createSequence(std::string prefix, std::string suffix, index_type start,
-                    index_type end, unsigned char padding = 0,
+Item createSequence(CStringView pattern, Index start, Index end,
                     unsigned char step = 1);
+
+Item createSequence(CStringView pattern, Indices indices);
 
 // Produces a matcher from a pattern string.
 // Use it with the following match function.
@@ -32,7 +57,7 @@ Item createSequence(std::string prefix, std::string suffix, index_type start,
 //
 // throws std::invalid_argument if string is empty or does not contain a padding
 // character ('#' or '@').
-std::regex getMatcher(const std::string &pattern, bool ignoreCase = false);
+std::regex getMatcher(CStringView pattern, bool ignoreCase = false);
 
 // Tests if a particular Item matches a pattern.
 // Useful to filter a collection of Items. eg:
@@ -52,6 +77,10 @@ std::regex getMatcher(const std::string &pattern, bool ignoreCase = false);
 // items.erase(std::remove_if(items.begin(), items.end(), predicate),
 // items.end());
 bool match(const std::regex &matcher, const Item &candidate);
+
+namespace details {
+std::string getMatcherString(std::string pattern);
+} // namespace details
 
 } // namespace sequence
 

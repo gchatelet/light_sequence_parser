@@ -1,8 +1,11 @@
 #include "JsonWriter.h"
 
 #include <sequence/Parser.hpp>
+#include <cassert>
 #include <cstdio>
 #include <cstdlib>
+
+#include <deque>
 
 namespace sequence {
 
@@ -49,7 +52,8 @@ inline static const char *getTypeString(Item::Type type) {
   case Item::PACKED:
     return "packed";
   }
-  return nullptr;
+  assert(false);
+  return "error";
 }
 
 inline static std::string toJson(const Item &item) {
@@ -164,13 +168,13 @@ int main(int argc, char **argv) {
       folder = arg;
   }
 
-  list<Item> folders;
+  deque<Item> folders;
   folders.emplace_back(folder);
 
   while (!folders.empty()) {
     const auto &current = folders.front().filename;
 
-    auto result = parseDir(configuration, current.c_str());
+    auto result = parseDir(configuration, current);
 
     for (const Item &item : result.directories) {
       const string &filename = item.filename;
@@ -183,10 +187,11 @@ int main(int argc, char **argv) {
           folders.emplace_back(current + '/' + filename);
       }
     }
-    if (json)
+    if (json) {
       printJson(result);
-    else
+    } else {
       printRegular(result);
+    }
 
     folders.pop_front();
   }

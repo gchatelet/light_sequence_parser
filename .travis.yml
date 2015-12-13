@@ -1,0 +1,25 @@
+language: cpp
+
+sudo: required
+dist: trusty
+
+compiler:
+  - clang
+  - gcc
+
+addons:
+  apt:
+    packages:
+    - libgtest-dev
+
+before_install:
+  - export GTEST_DIR=gtest_dir
+  - mkdir -p $GTEST_DIR
+  - cp -a /usr/include/gtest/. $GTEST_DIR/
+  - cp -a /usr/src/gtest/.     $GTEST_DIR/
+  - ls -R $GTEST_DIR
+  - export CPU=3
+
+script:
+  - $CXX --version
+  - make test -j$CPU
