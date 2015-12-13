@@ -1,5 +1,4 @@
-CFLAGS=-Iinclude -std=c++0x -Wall
-#CFLAGS+=-O -DNDEBUG
+CFLAGS=-Iinclude -O3 -std=c++0x -Wall -Werror
 #CFLAGS+=-g -O0 -fno-omit-frame-pointer -fsanitize=address
 
 GTEST_FLAGS=-isystem ${GTEST_DIR}/include -pthread
