@@ -1,4 +1,4 @@
-light sequence parser [![Build Status](https://travis-ci.org/gchatelet/light_sequence_parser.svg?branch=cleaner_version)](https://travis-ci.org/gchatelet/light_sequence_parser)
+light sequence parser [![Build Status](https://travis-ci.org/gchatelet/light_sequence_parser.svg?branch=master)](https://travis-ci.org/gchatelet/light_sequence_parser)
 =====================
 
 **light sequence parser** is a lightweight opensource library to parse folders and group sequences of files.
