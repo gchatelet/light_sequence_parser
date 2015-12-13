@@ -35,12 +35,13 @@ void printRegular(const Item &item) {
 }
 
 void printRegular(const FolderContent &result) {
-  printf("\n\n* %s\n", result.name.c_str());
-  for (const Item &item : result.directories)
+
+  const std::string& folder = result.name;
+  const size_t size = folder.find_last_not_of('/');
+  for (const Item &item : result.files) {
+    printf("%.*s/", (int)size, folder.c_str());
     printRegular(item);
-  printf("\n");
-  for (const Item &item : result.files)
-    printRegular(item);
+  }
 }
 
 std::string toJson(const Item &item) {
