@@ -1,11 +1,14 @@
 #include "JsonWriter.h"
 
-#include <sequence/Parser.hpp>
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
 
-#include <deque>
+#include <vector>
+#include <string>
+
+#include <sequence/Parser.hpp>
+#include <sequence/details/StringUtils.hpp>
 
 namespace sequence {
 
@@ -168,11 +171,12 @@ int main(int argc, char **argv) {
       folder = arg;
   }
 
-  deque<Item> folders;
+  vector<string> folders;
   folders.emplace_back(folder);
 
   while (!folders.empty()) {
-    const auto &current = folders.front().filename;
+    const auto current = move(folders.back());
+    folders.pop_back();
 
     auto result = parseDir(configuration, current);
 
@@ -182,9 +186,9 @@ int main(int argc, char **argv) {
           filename != "..") {
         const bool lastCurrentCharIsSlash = current.back() == '/';
         if (lastCurrentCharIsSlash)
-          folders.emplace_back(current + filename);
+          folders.push_back(concat(current, filename));
         else
-          folders.emplace_back(current + '/' + filename);
+          folders.push_back(concat(current , "/", filename));
       }
     }
     if (json) {
@@ -192,8 +196,6 @@ int main(int argc, char **argv) {
     } else {
       printRegular(result);
     }
-
-    folders.pop_front();
   }
 
   return EXIT_SUCCESS;
