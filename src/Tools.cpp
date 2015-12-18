@@ -10,8 +10,6 @@ namespace sequence {
 
 namespace {
 
-bool containsPatternCharacter(CStringView str) { return str.contains('#'); }
-
 void replaceAll(std::string &subject, const std::string &search,
                 const std::string &replace) {
   size_t pos = 0;
@@ -60,8 +58,6 @@ unsigned getPadding(CStringView pattern) {
 }
 
 Item createSingleFile(CStringView filename) {
-  if (containsPatternCharacter(filename))
-    return {};
   return Item{filename.toString()};
 }
 
