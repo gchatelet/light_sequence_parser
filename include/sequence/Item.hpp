@@ -17,7 +17,6 @@ namespace sequence {
 // - INDICED : it's a sequence with a set of numbers attached to it.
 // - PACKED  : it's a contiguous sequence going from start to end inclusive.
 struct Item {
-  enum : char { PADDING_CHAR = '#' };
   enum Type { INVALID, SINGLE, INDICED, PACKED };
 
   std::string filename;
