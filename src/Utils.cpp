@@ -24,6 +24,13 @@ namespace details {
 #error "Unexpected platform"
 #endif
 
+std::pair<CStringView, CStringView>
+getInternalPrefixAndSuffix(CStringView pattern) {
+  assert(pattern.contains(PADDING_CHAR));
+  return std::make_pair(pattern.substr(0, pattern.indexOf(PADDING_CHAR)),
+                        pattern.substr(pattern.lastIndexOf(PADDING_CHAR) + 1));
+}
+
 IndexParser::IndexParser(CStringView str) {
   for (const char c : str) {
     put(c);
@@ -169,7 +176,7 @@ SplitBucket::SplitBucket(Bucket &&bucket) {
 SplitBucket::SplitBucket(SplitBucket &a, SplitBucket &b) {
   assert(a.canMerge(b));
   CStringView prefix, suffix;
-  std::tie(prefix, suffix) = getPrefixAndSuffix(a.pattern);
+  std::tie(prefix, suffix) = getInternalPrefixAndSuffix(a.pattern);
   pattern = concat(prefix, "#", suffix);
   sortedIndices = std::move(a.sortedIndices);
   sortedIndices.insert(std::end(sortedIndices), std::begin(b.sortedIndices),
@@ -182,12 +189,15 @@ struct FakeSet {
   bool isDisjoint = true;
   void push_back(const Index &) { isDisjoint = false; }
 };
+
 bool SplitBucket::containsPadding() const {
   return CStringView(pattern).contains(PADDING_CHAR);
 }
+
 bool SplitBucket::canMerge(const SplitBucket &other) const {
   if (!containsPadding() || !other.containsPadding() ||
-      getPrefixAndSuffix(pattern) != getPrefixAndSuffix(other.pattern)) {
+      getInternalPrefixAndSuffix(pattern) !=
+          getInternalPrefixAndSuffix(other.pattern)) {
     return false;
   }
   FakeSet set;
@@ -199,7 +209,7 @@ bool SplitBucket::canMerge(const SplitBucket &other) const {
 
 std::string SplitBucket::getBakedPattern(Index value) const {
   CStringView prefix, suffix;
-  std::tie(prefix, suffix) = getPrefixAndSuffix(pattern);
+  std::tie(prefix, suffix) = getInternalPrefixAndSuffix(pattern);
   const auto padding = pattern.size() - prefix.size() - suffix.size();
   char buffer[10]; // 4,294,967,295 is 10 characters long maximum.
   StringView view(buffer, padding == 1 ? 1 + std::log10(value) : padding);

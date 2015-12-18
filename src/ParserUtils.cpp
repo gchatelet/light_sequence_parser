@@ -104,7 +104,8 @@ void mergeCompatiblePadding(SplitBuckets &buckets) {
 }
 
 bool noPaddingLess(const Bucket &a, const Bucket &b) {
-  return getText(a.pattern) < getText(b.pattern);
+  return getInternalPrefixAndSuffix(a.pattern) <
+         getInternalPrefixAndSuffix(b.pattern);
 }
 
 } // namespace details

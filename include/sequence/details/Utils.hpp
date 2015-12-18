@@ -54,6 +54,11 @@ std::vector<StringView> getPlaceholders(StringView pattern);
 // e.g. "path##.ext" -> {"path", ".ext"}
 std::vector<CStringView> getText(CStringView pattern);
 
+// Fast extraction of prefix/suffix for a given pattern.
+// Asserts if more than one padding array is found.
+std::pair<CStringView, CStringView>
+getInternalPrefixAndSuffix(CStringView pattern);
+
 // Given a pattern with '#', replaces the 'index' nth placeholder with the
 // specified value.
 // e.g. bake("/path/to/file##_###.cr#", 1, 12) == "/path/to/file##_012.cr#"
