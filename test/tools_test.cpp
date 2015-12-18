@@ -41,8 +41,8 @@ TEST(Tools, getPrefixAndSuffix) {
 }
 
 TEST(Tools, createFile) {
-  // a file that looks like a pattern is invalid
-  EXPECT_EQ(createSingleFile("file#.jpg").getType(), Item::INVALID);
+  // a file that looks like a pattern is valid
+  EXPECT_EQ(createSingleFile("file#.jpg").getType(), Item::SINGLE);
 
   const Item item = createSingleFile("file.jpg");
   EXPECT_EQ(item.getType(), Item::SINGLE);
