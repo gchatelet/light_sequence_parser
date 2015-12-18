@@ -28,30 +28,28 @@ $(BUILD_DIR)/libsequenceparser.a: $(OBJECTS)
 	ar -cvq $@ $^
 
 .PHONY: test
-test: $(BUILD_DIR)/test check-env
+test: $(BUILD_DIR)/test
 	./$<
 
-$(BUILD_DIR)/_%.o: test/%.cpp | $(BUILD_DIR)
+$(BUILD_DIR)/_%.o: test/%.cpp | $(BUILD_DIR) check-test-env
 	$(CXX) $(CFLAGS) $(GTEST_FLAGS) -c $< -o $@
 
-$(BUILD_DIR)/test: $(TEST_OBJECTS) $(OBJECTS) $(BUILD_DIR)/gtest-all.o $(BUILD_DIR)/gtest_main.o
+$(BUILD_DIR)/test: $(TEST_OBJECTS) $(OBJECTS) $(BUILD_DIR)/gtest-all.o $(BUILD_DIR)/gtest_main.o | check-test-env
 	$(CXX) $(CFLAGS) $(GTEST_FLAGS) $^ -o $@
 
-$(BUILD_DIR)/gtest-all.o: $(GTEST_DIR)/src/gtest-all.cc | $(BUILD_DIR)
+$(BUILD_DIR)/gtest-all.o: $(GTEST_DIR)/src/gtest-all.cc | $(BUILD_DIR) check-test-env
 	$(CXX) $(GTEST_FLAGS) -I${GTEST_DIR} -c $< -o $@
 
-$(BUILD_DIR)/gtest_main.o: $(GTEST_DIR)/src/gtest_main.cc | $(BUILD_DIR)
+$(BUILD_DIR)/gtest_main.o: $(GTEST_DIR)/src/gtest_main.cc | $(BUILD_DIR) check-test-env
 	$(CXX) $(GTEST_FLAGS) -I${GTEST_DIR} -c $< -o $@
 
 .PHONY: clean
 clean:
 	rm -Rf $(BUILD_DIR)
 
-.PHONY: check-env
-check-env:
-ifndef GTEST_DIR
-    $(error GTEST_DIR is undefined, unzip https://googletest.googlecode.com/files/gtest-1.7.0.zip somewhere and set GTEST_DIR env)
-endif
+.PHONY: check-test-env
+check-test-env:
+	@if test -z "$$GTEST_DIR"; then echo "GTEST_DIR is undefined, unzip https://googletest.googlecode.com/files/gtest-1.7.0.zip somewhere and set GTEST_DIR env"; fi;
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
