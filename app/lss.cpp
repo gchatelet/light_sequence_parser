@@ -37,9 +37,10 @@ void printRegular(const Item &item) {
 void printRegular(const FolderContent &result) {
 
   const std::string& folder = result.name;
-  const size_t size = folder.find_last_not_of('/');
+  const size_t indexOfLastNonSlash = folder.find_last_not_of('/');
+  const size_t stringNoSlashSize = indexOfLastNonSlash + 1;
   for (const Item &item : result.files) {
-    printf("%.*s/", (int)size, folder.c_str());
+    printf("%.*s/", (int)(stringNoSlashSize), folder.c_str());
     printRegular(item);
   }
 }
