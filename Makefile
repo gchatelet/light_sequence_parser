@@ -1,5 +1,7 @@
 CFLAGS=-Iinclude -O3 -std=c++0x -Wall -Werror
-#CFLAGS+=-g -O0 -fno-omit-frame-pointer -fsanitize=address
+ifdef DEBUG
+CFLAGS+=-g -O0 -fno-omit-frame-pointer -fsanitize=address
+endif
 
 GTEST_FLAGS=-isystem ${GTEST_DIR}/include -pthread
 BUILD_DIR=build
