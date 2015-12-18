@@ -106,4 +106,15 @@ TEST(Parser, merge) {
   EXPECT_EQ(Items({createSequence("file#.ext", 97, 102)}), content.files);
 }
 
+TEST(Parser, fileWithPattern) {
+  StringFileLister lister({"file0001.ext", "file0002.ext", "file0003.ext",
+                           "file0004.ext", "file0005.ext", "file####.ext"});
+  Configuration configuration;
+  configuration.pack = true;
+  const auto content = parse(configuration, lister());
+  EXPECT_EQ(Items({createSequence("file####.ext", 1, 5),
+                   createSingleFile("file####.ext")}),
+            content.files);
+}
+
 } // namespace sequence

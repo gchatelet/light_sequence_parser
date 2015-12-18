@@ -167,7 +167,7 @@ struct FileBucketizer {
   std::vector<Bucket> transfer();
 
 private:
-  Bucket &getOrAdd(CStringView string);
+  Bucket &getOrAdd(CStringView string, uint32_t seed);
 
   std::unordered_map<uint32_t, std::vector<Bucket>> hash_map;
   Indices tmp;

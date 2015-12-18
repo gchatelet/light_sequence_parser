@@ -2,9 +2,9 @@
 
 #include "MurmurHash3.h"
 
-uint32_t hash(CStringView view) {
+uint32_t hash(CStringView view, uint32_t seed) {
   uint32_t hash;
-  MurmurHash3_x86_32(view.ptr(), view.size(), 0 /*seed*/, &hash);
+  MurmurHash3_x86_32(view.ptr(), view.size(), seed, &hash);
   return hash;
 }
 

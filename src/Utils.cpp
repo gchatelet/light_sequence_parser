@@ -268,8 +268,8 @@ void SplitBucket::output(bool bakeSingleton, std::function<void(Item)> push) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-Bucket &FileBucketizer::getOrAdd(CStringView bucket) {
-  const uint32_t hashed = hash(bucket);
+Bucket &FileBucketizer::getOrAdd(CStringView bucket, uint32_t seed) {
+  const uint32_t hashed = hash(bucket, seed);
   auto itr = hash_map.find(hashed);
   auto &vector = itr == hash_map.end() ? hash_map[hashed] : itr->second;
   for (auto &item : vector) {
@@ -283,7 +283,7 @@ Bucket &FileBucketizer::getOrAdd(CStringView bucket) {
 
 Bucket &FileBucketizer::ingest(StringView filename) {
   extractFileIndicesAndNormalize(filename, tmp);
-  auto &bucket = getOrAdd(filename);
+  auto &bucket = getOrAdd(filename, tmp.size());
   bucket.ingest(tmp);
   return bucket;
 }
