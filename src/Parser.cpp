@@ -78,7 +78,7 @@ public:
       if (noMoreFile)
         return false;
       tmp = fdFile.cFileName;
-      entry.pFilename = tmp.c_str();
+      entry.filename = tmp;
       entry.isDirectory = fdFile.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
       noMoreFile = !FindNextFile(hFind, &fdFile);
       return true;
